@@ -1,2 +1,4 @@
 config/aliases.json
 logs/
+*.log
+*.tmp
