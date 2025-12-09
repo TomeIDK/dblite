@@ -120,4 +120,4 @@ function Format-LogEntry {
     return "[$($Level.ToUpper())] $($Timestamp.ToString("yyyy-MM-dd HH:mm:ss")): $Message"
 }
 
-Export-ModuleMember -Function Write-DBLiteLog, Initialize-LogFile, Format-LogEntry
+Export-ModuleMember -Function Write-DBLiteLog
