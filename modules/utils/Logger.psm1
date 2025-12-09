@@ -19,29 +19,27 @@
     Writes a timestamped, leveled entry to today's DBLite log file and optionally forwards the formatted entry to the GUI.
 
 .SYNTAX
-    Write-DBLiteLog [-Level <Debug|Info|Warning|Error>] -Timestamp <datetime> -Message <string> [-ToGui] [<CommonParameters>]
+    Write-DBLiteLog [-Level <Debug|Info|Warning|Error>] -Message <string> [-Timestamp <datetime>] [-ToGui] [<CommonParameters>]
 
 .PARAMETERS
     Level     - Log level (Debug, Info, Warning, Error)
-    Timestamp - Date/time for the entry (DateTime); used for formatting
     Message   - Text to write to the log
+    Timestamp - Date/time for the entry (DateTime); used for formatting
     ToGui     - Switch; if present, forward the entry to the GUI log
 
 .EXAMPLE
     Write-DBLiteLog -Level Info -Timestamp (Get-Date) -Message "Database initialized."
 
-.RETURNS
-    None (writes the formatted entry to the logfile).
 #>
 function Write-DBLiteLog {
     param(
-    [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Debug", "Info", "Warning", "Error")] $Level,
-    [Parameter(Mandatory = $true, Position = 1)]
-    [DateTime] $Timestamp = Get-Date,
-    [Parameter(Mandatory = $true, Position = 2)]
-    [string] $Message,
-    [switch] $ToGui
+        [Parameter(Mandatory = $true, Position = 0)]
+        [ValidateSet("Debug", "Info", "Warning", "Error")] $Level,
+        [Parameter(Mandatory = $false)]
+        [DateTime] $Timestamp = (Get-Date),
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string] $Message,
+        [switch] $ToGui
     )
 
     $logFile = Initialize-LogFile
@@ -65,9 +63,9 @@ function Write-DBLiteLog {
 #>
 function Initialize-LogFile {
 
-    $logFolder = Join-Path "$PSScriptRoot\..\..\logs"
+    $logFolder = Join-Path $PSScriptRoot "\..\..\logs"
     if (-not (Test-Path $logFolder)) { New-Item -Path $logFolder -ItemType Directory | Out-Null }
-    
+
     # Construct logfile path and create file if it doesn't exist
     $today = Get-Date -Format "ddMMyyyy"
     $logFile = Join-Path $logFolder "dblite$today.log"
@@ -108,14 +106,14 @@ function Initialize-LogFile {
     String: the formatted log entry.
 #>
 function Format-LogEntry {
-   param(
-    [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("Debug", "Info", "Warning", "Error")] $Level,
-    [Parameter(Mandatory = $true, Position = 1)]
-    [DateTime] $Timestamp,
-    [Parameter(Mandatory = $true, Position = 2)]
-    [string] $Message,
-   )
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [ValidateSet("Debug", "Info", "Warning", "Error")] $Level,
+        [Parameter(Mandatory = $true, Position = 1)]
+        [DateTime] $Timestamp,
+        [Parameter(Mandatory = $true, Position = 2)]
+        [string] $Message
+    )
 
     return "[$($Level.ToUpper())] $($Timestamp.ToString("yyyy-MM-dd HH:mm:ss")): $Message"
 }

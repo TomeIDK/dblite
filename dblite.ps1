@@ -11,7 +11,7 @@ Import-Module "$PSScriptRoot\modules\providers\SqlServerProvider\SqlServerProvid
 Import-Module "$PSScriptRoot\modules\gui\GetTablesGui\GetTablesGui.psm1" -Force
 
 $connectionString = Resolve-ConnectionString $connectionInput
-Write-Host "Using connection string: $connectionString"
+Write-Host "[DBLite] Using connection string: $connectionString"
 
 $provider = New-SqlServerProvider
 
@@ -19,7 +19,7 @@ try {
     $provider.Connect($connectionString)
 }
 catch {
-    Write-Warning $_
+    Write-Error "[DBLite] Could not connect to database. See log for details: $_"
     exit
 }
 

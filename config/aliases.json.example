@@ -1,4 +1,0 @@
-{
-  "comment": "Use double backslashes to escape backslashes in JSON strings.",
-  "MyDatabase": "Connection string for your database"
-}
