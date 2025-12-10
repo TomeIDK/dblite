@@ -14,6 +14,6 @@ A lightweight Powershell database inspector with WinForms.
 - [ ] Backup manager
 - [ ] Schema browser
 - [ ] Schema visualization
-- [ ] Error handling with informative messages
-- [ ] Pester tests
+- [x] Error handling with informative messages
+- [x] Pester tests
 - [ ] Documentation
