@@ -31,7 +31,11 @@ Import-Module "$PSScriptRoot\Logger.psm1" -Force
     $aliases = Get-DBLiteAliases
 #>
 function Get-DBLiteAliases {
-    $aliasFile = "$PSScriptRoot\..\..\config\aliases.json"
+    param(
+        [string] $AliasFileLocation = "$PSScriptRoot\..\..\config\aliases.json"
+    )
+
+    $aliasFile = $AliasFileLocation
 
     # Ensure alias file exists
     if (-not (Test-Path $aliasFile)) {
@@ -92,4 +96,4 @@ function Resolve-ConnectionString {
     }
 }
 
-Export-ModuleMember -Function Resolve-ConnectionString
+Export-ModuleMember -Function Resolve-ConnectionString, Get-DBLiteAliases

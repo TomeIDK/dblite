@@ -62,8 +62,11 @@ function Write-DBLiteLog {
     String: full path to today's logfile.
 #>
 function Initialize-LogFile {
+    param(
+        [string] $BasePath = (Join-Path $PSScriptRoot "\..\..\logs")
+    )
 
-    $logFolder = Join-Path $PSScriptRoot "\..\..\logs"
+    $logFolder = $BasePath
     if (-not (Test-Path $logFolder)) { New-Item -Path $logFolder -ItemType Directory | Out-Null }
 
     # Construct logfile path and create file if it doesn't exist
@@ -74,7 +77,7 @@ function Initialize-LogFile {
 
     # Remove log files older than 30 days based on last write time
     $cutoff = (Get-Date).AddDays(-30)
-    Get-ChildItem -Path $logFolder -Filter "dblite_*.log" | ForEach-Object {
+    Get-ChildItem -Path $logFolder -Filter "dblite*.log" | ForEach-Object {
         if ($_.LastWriteTime -lt $cutoff) {
             Remove-Item $_.FullName -Force
         }
@@ -118,4 +121,4 @@ function Format-LogEntry {
     return "[$($Level.ToUpper())] $($Timestamp.ToString("yyyy-MM-dd HH:mm:ss")): $Message"
 }
 
-Export-ModuleMember -Function Write-DBLiteLog
+Export-ModuleMember -Function Write-DBLiteLog, Initialize-LogFile, Format-LogEntry
