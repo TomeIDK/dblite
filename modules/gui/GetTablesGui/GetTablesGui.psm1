@@ -10,24 +10,25 @@ function Start-DBLiteGui {
 
 
 
-    $tables = $Provider.GetTables()
 
-    $form = New-Object System.Windows.Forms.Form
-    $form.Text = "DBLite Tables (SQL Server)"
-    $form.Size = New-Object System.Drawing.Size(400, 300)
+    # $tables = $Provider.GetTables()
 
-    $listBox = New-Object System.Windows.Forms.ListBox
-    $listBox.Size = New-Object System.Drawing.Size(300, 200)
-    $listBox.Location = New-Object System.Drawing.Point(40, 30)
-    $listBox.Items.AddRange($tables)
+    # $form = New-Object System.Windows.Forms.Form
+    # $form.Text = "DBLite Tables (SQL Server)"
+    # $form.Size = New-Object System.Drawing.Size(400, 300)
 
-    $form.Controls.Add($listBox)
+    # $listBox = New-Object System.Windows.Forms.ListBox
+    # $listBox.Size = New-Object System.Drawing.Size(300, 200)
+    # $listBox.Location = New-Object System.Drawing.Point(40, 30)
+    # $listBox.Items.AddRange($tables)
 
-    $form.Add_FormClosing({
-            $Provider.Disconnect()
-        })
+    # $form.Controls.Add($listBox)
 
-    $form.ShowDialog()
+    # $form.Add_FormClosing({
+    #         $Provider.Disconnect()
+    #     })
+
+    # $form.ShowDialog()
 }
 
 Export-ModuleMember -Function Start-DBLiteGui

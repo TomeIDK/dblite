@@ -9,9 +9,10 @@ Import-Module "$PSScriptRoot\modules\core\IDatabaseProvider\IDatabaseProvider.ps
 Import-Module "$PSScriptRoot\modules\core\DatabaseProviderBase\DatabaseProviderBase.psm1" -Force
 Import-Module "$PSScriptRoot\modules\providers\SqlServerProvider\SqlServerProvider.psm1" -Force
 Import-Module "$PSScriptRoot\modules\gui\GetTablesGui\GetTablesGui.psm1" -Force
+. "$PSScriptRoot\src\gui\MainForm.ps1"
 
 $connectionString = Resolve-ConnectionString $connectionInput
-Write-Host "[DBLite] Using connection string: $connectionString"
+Write-Host "[DBLite] Connected using connection string: $connectionString"
 
 $provider = New-SqlServerProvider
 
@@ -24,4 +25,4 @@ catch {
 }
 
 # Start GUI
-Start-DBLiteGui -Provider $provider
+Start-DBLiteGUI -Provider $provider

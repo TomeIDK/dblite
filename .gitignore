@@ -1,4 +1,5 @@
 config/aliases.json
+config/savedqueries.json
 logs/
 *.log
 *.tmp

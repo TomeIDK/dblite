@@ -30,16 +30,41 @@ function New-SqlServerProvider {
     } -Force
 
     $provider | Add-Member -MemberType ScriptMethod -Name RunQuery -Value {
-        param($query)
+        param(
+            [Parameter(Mandatory = $true, Position = 0)]
+            [string] $Query
+        )
         if (-not $this.IsConnected) {
             Write-DBLiteLog -Level "Error" -Message "Attempted to run query while not connected to the database."
             throw "Not connected to the database."
         }
 
-        $cmd = $this.Connection.CreateCommand()
-        $cmd.CommandText = $query
-        Write-DBLiteLog -Level "Info" -Message "Executed query: $query"
-        return $cmd.ExecuteReader()
+        try {
+            Write-DBLiteLog -Level "Info" -Message "Executing query: $Query"
+
+            $cmd = $this.Connection.CreateCommand()
+            $cmd.CommandText = $Query
+
+            $result = $cmd.ExecuteReader()
+            Write-DBLiteLog -Level "Info" -Message "Query executed successfully."
+            $table = New-Object System.Data.DataTable
+            $table.Load($result)
+            $result.Close()
+
+            return $table
+        }
+        catch {
+            Write-DBLiteLog -Level "Error" -Message "Failed to execute query: $_"
+
+            $errorTable = New-Object System.Data.DataTable
+            $errorTable.Columns.Add("Error", [string])
+            $row = $errorTable.NewRow()
+            $row["Error"] = $_.Exception.Message
+            $errorTable.Rows.Add($row)
+
+            return $errorTable
+        }
+
     } -Force
 
     $provider | Add-Member -MemberType ScriptMethod -Name GetTables -Value {
