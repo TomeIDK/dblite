@@ -78,8 +78,8 @@ function Add-ListBoxSavedQueries {
         $ListBox.Items.AddRange($items)
     }
 
-    $ListBox.DisplayMember = "Name"
-    $ListBox.ValueMember = "Sql"
+    $ListBox.Height = ($ListBox.Items.Count * 20)
+
 }
 
 Export-ModuleMember -Function Get-SavedQueries, Save-SavedQuery, Remove-SavedQuery, Add-ListBoxSavedQueries

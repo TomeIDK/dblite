@@ -45,24 +45,22 @@ function New-SqlServerProvider {
             $cmd = $this.Connection.CreateCommand()
             $cmd.CommandText = $Query
 
-            $result = $cmd.ExecuteReader()
+            $reader = $cmd.ExecuteReader()
             Write-DBLiteLog -Level "Info" -Message "Query executed successfully."
+
             $table = New-Object System.Data.DataTable
-            $table.Load($result)
-            $result.Close()
+            $table.Load($reader)
+            $reader.Close()
 
             return $table
         }
         catch {
-            Write-DBLiteLog -Level "Error" -Message "Failed to execute query: $_"
+            $errorMessage = $_.Exception.Message
+            Write-DBLiteLog -Level "Error" -Message "Failed to execute query: $errorMessage"
 
-            $errorTable = New-Object System.Data.DataTable
-            $errorTable.Columns.Add("Error", [string])
-            $row = $errorTable.NewRow()
-            $row["Error"] = $_.Exception.Message
-            $errorTable.Rows.Add($row)
-
-            return $errorTable
+            return [PSCustomObject]@{
+                Error = $errorMessage
+            }
         }
 
     } -Force

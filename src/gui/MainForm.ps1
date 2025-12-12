@@ -35,8 +35,10 @@ function New-MainForm {
     $Sidebar.Controls.Add($TitleLabel)
 
     # Content panel
-    $ContentPanel = New-Object System.Windows.Forms.Panel
+    $ContentPanel = New-Object System.Windows.Forms.TableLayoutPanel
     $ContentPanel.Dock = "Fill"
+    $ContentPanel.RowCount = 1
+    $ContentPanel.ColumnCount = 1
     $ContentPanel.BackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
     $ContentPanel.Padding = [System.Windows.Forms.Padding]::new(10, 0, 10, 0)
 

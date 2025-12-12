@@ -19,13 +19,12 @@
     Writes a timestamped, leveled entry to today's DBLite log file and optionally forwards the formatted entry to the GUI.
 
 .SYNTAX
-    Write-DBLiteLog [-Level <Debug|Info|Warning|Error>] -Message <string> [-Timestamp <datetime>] [-ToGui] [<CommonParameters>]
+    Write-DBLiteLog [-Level <Debug|Info|Warning|Error>] -Message <string> [-Timestamp <datetime>] [<CommonParameters>]
 
 .PARAMETERS
     Level     - Log level (Debug, Info, Warning, Error)
     Message   - Text to write to the log
     Timestamp - Date/time for the entry (DateTime); used for formatting
-    ToGui     - Switch; if present, forward the entry to the GUI log
 
 .EXAMPLE
     Write-DBLiteLog -Level Info -Timestamp (Get-Date) -Message "Database initialized."
@@ -38,13 +37,19 @@ function Write-DBLiteLog {
         [Parameter(Mandatory = $false)]
         [DateTime] $Timestamp = (Get-Date),
         [Parameter(Mandatory = $true, Position = 1)]
-        [string] $Message,
-        [switch] $ToGui
+        [string] $Message
     )
 
     $logFile = Initialize-LogFile
     $formattedEntry = Format-LogEntry -Level $Level -Timestamp $Timestamp -Message $Message
     Add-Content -Path $logFile -Value $formattedEntry
+
+    switch ($Level) {
+        "Error" { Write-Error $formattedEntry }
+        "Warning" { Write-Warning $formattedEntry }
+        "Info" { Write-Host $formattedEntry }
+        Default { Write-Debug $formattedEntry }
+    }
 }
 
 <#
@@ -114,6 +119,7 @@ function Format-LogEntry {
         [ValidateSet("Debug", "Info", "Warning", "Error")] $Level,
         [Parameter(Mandatory = $true, Position = 1)]
         [DateTime] $Timestamp,
+
         [Parameter(Mandatory = $true, Position = 2)]
         [string] $Message
     )

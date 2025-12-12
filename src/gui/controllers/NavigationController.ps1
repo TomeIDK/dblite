@@ -1,7 +1,7 @@
 function New-NavigationController {
     param(
         [Parameter(Mandatory = $true)]
-        [System.Windows.Forms.Panel]$ContentPanel,
+        [System.Windows.Forms.TableLayoutPanel]$ContentPanel,
 
         [Parameter(Mandatory = $true)]
         [hashtable]$Buttons,
@@ -28,14 +28,12 @@ function New-NavigationController {
 
         # Dispose previous view
         if ($null -ne $this.CurrentView) {
-            $this.ContentPanel.Controls.Remove($this.CurrentView)
+            $this.ContentPanel.Controls.Clear()
             $this.CurrentView.Dispose()
-            $this.CurrentView = $null
         }
 
         # Check if view exists
         $file = Join-Path $this.ViewsPath "$($ViewName -replace ' ', '').ps1"
-        Write-Host "[NavigationController] Loading view: $ViewName from $file"
 
         if (Test-Path $file) {
             $view = & $file -Provider $Provider
@@ -48,8 +46,7 @@ function New-NavigationController {
             $view.Location = New-Object System.Drawing.Point(20, 20)
         }
 
-        $view.Dock = "Fill"
-        $this.ContentPanel.Controls.Add($view)
+        $this.ContentPanel.Controls.Add($view, 0, 0)
         $this.CurrentView = $view
 
         foreach ($key in $this.Buttons.Keys) {

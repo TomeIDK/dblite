@@ -12,11 +12,6 @@ Import-Module "$PSScriptRoot\..\..\..\modules\utils\Logger.psm1" -Force
 
 $AssetsPath = Join-Path $PSScriptRoot "..\assets"
 
-# Main view panel
-$panel = New-Object System.Windows.Forms.Panel
-$panel.Dock = "Fill"
-$panel.BackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
-
 
 # Top bar
 $topBar = New-Object System.Windows.Forms.Panel
@@ -72,11 +67,12 @@ function New-StyledButton {
 $sqlBox = New-Object System.Windows.Forms.TextBox
 $sqlBox.Multiline = $true
 $sqlBox.ScrollBars = "Vertical"
-$sqlBox.Font = New-Object System.Drawing.Font("Consolas", 10)
+$sqlBox.Font = New-Object System.Drawing.Font("Segoe UI", 10)
 $sqlBox.Dock = "Top"
 $sqlBox.Height = 200
 $sqlBox.Padding = [System.Windows.Forms.Padding]::new(10)
-$sqlBox.Text = "SELECT * FROM Users;"
+$sqlBox.Text = "SELECT * FROM Products;"
+$sqlBox.BorderStyle = "FixedSingle"
 
 
 # Saved queries title
@@ -87,26 +83,29 @@ $savedTitle.Dock = "Top"
 $savedTitle.AutoSize = $true
 
 
-# Saved queries list
+# Saved queries listbox
 $savedList = New-Object System.Windows.Forms.ListBox
 $savedList.Font = New-Object System.Drawing.Font("Segoe UI", 10)
 $savedList.Dock = "Fill"
-$savedList.Height = ($savedList.Items.Count * $savedList.ItemHeight) + 2
+$savedList.BorderStyle = "FixedSingle"
+$savedList.DisplayMember = "Name"
+$savedList.ValueMember = "Sql"
+$savedList.Add_DoubleClick({
+        if ($savedList.SelectedItem) {
+            $sqlBox.Text = $savedList.SelectedItem.Sql
+        }
+    }.GetNewClosure())
 Add-ListBoxSavedQueries -ListBox $savedList
-
-# Container for saved queries
-$savedPanel = New-Object System.Windows.Forms.Panel
-$savedPanel.Dock = "Fill"
 
 # Buttons
 $btnRun = New-StyledButton -Name "Run" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "run-icon-white-small.png")))
 $btnRun.Add_Click({
-        $Provider.RunQuery($sqlBox.Text) | Out-Null
+        $dt = $Provider.RunQuery($sqlBox.Text)
+        $dt | Out-GridView -Title "DBLite | Query Results"
     }.GetNewClosure())
 
 $btnSave = New-StyledButton -Name "Save Query" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "save-icon-white-small.png")))
 $btnSave.Add_Click({
-        Write-Host "sqlBox text: " $sqlBox.Text
         $modal = New-Object System.Windows.Forms.Form
         $modal.Text = "Save Query"
         $modal.Size = New-Object System.Drawing.Size(350, 150)
@@ -165,16 +164,19 @@ $btnPanel.Controls.AddRange(@($btnRun, $btnSave, $btnClear))
 
 
 # Layout builder
-$savedPanel.Controls.Add($savedList)
-$savedPanel.Controls.Add($savedTitle)
+$viewLayout = New-Object System.Windows.Forms.TableLayoutPanel
+$viewLayout.Dock = "Fill"
+$viewLayout.RowCount = 5
+$viewLayout.ColumnCount = 1
 
 $topBar.Controls.Add($title)
 $topBar.Controls.Add($btnPanel)
 
-$panel.Controls.Add($savedPanel)
-$panel.Controls.Add($sqlBox)
-$panel.Controls.Add($topBar)
+$viewLayout.Controls.Add($topBar, 0, 0)
+$viewLayout.Controls.Add($sqlBox, 0, 1)
+$viewLayout.Controls.Add($savedTitle, 0, 2)
+$viewLayout.Controls.Add($savedList, 0, 3)
 
 
 # Return the panel as the view
-return $panel
+return $viewLayout
