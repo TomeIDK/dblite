@@ -1,3 +1,5 @@
+Import-Module PSSQLite
+
 <#
 .SYNOPSIS
     Logging utilities for the DBLite module.
@@ -117,6 +119,7 @@ function Format-LogEntry {
     param(
         [Parameter(Mandatory = $true, Position = 0)]
         [ValidateSet("Debug", "Info", "Warning", "Error")] $Level,
+
         [Parameter(Mandatory = $true, Position = 1)]
         [DateTime] $Timestamp,
 
@@ -127,4 +130,91 @@ function Format-LogEntry {
     return "[$($Level.ToUpper())] $($Timestamp.ToString("yyyy-MM-dd HH:mm:ss")): $Message"
 }
 
-Export-ModuleMember -Function Write-DBLiteLog, Initialize-LogFile, Format-LogEntry
+function Write-QueryLog {
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string] $Database,
+
+        [Parameter(Mandatory = $true, Position = 1)]
+        [string] $QueryText,
+
+        [Parameter(Mandatory = $false, Position = 2)]
+        [ValidateSet("Success", "Failure")] $ExecutionStatus = "Success",
+
+        [Parameter(Mandatory = $false, Position = 3)]
+        [int] $AffectedRows = 0,
+
+        [Parameter(Mandatory = $false)]
+        [DateTime] $Timestamp = (Get-Date)
+
+    )
+
+
+    try {
+        $db = Initialize-SQLiteDB
+
+        $insertQuery = @"
+INSERT INTO QueryHistory (Database, QueryText, ExecutionStatus, AffectedRows, Timestamp)
+VALUES (
+    @Database,
+    @QueryText,
+    @ExecutionStatus,
+    @AffectedRows,
+    @Timestamp
+);
+"@
+
+        Invoke-SqliteQuery -Query $insertQuery -DataSource $db -SqlParameters @{
+            Database        = $Database
+            QueryText       = $QueryText
+            ExecutionStatus = $ExecutionStatus
+            AffectedRows    = $AffectedRows
+            Timestamp       = $Timestamp.ToString("o")
+        } | Out-Null
+        Write-DBLiteLog -Level "Info" -Message "Logged query execution: '$QueryText' Status: $ExecutionStatus AffectedRows: $AffectedRows"
+    }
+    catch {
+        Write-DBLiteLog -Level "Error" -Message "Failed to log query execution: $($_.Exception.Message)"
+    }
+
+
+}
+
+function Initialize-SQLiteDB {
+    param(
+        [Parameter(Mandatory = $false)]
+        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\logs\query_history.sqlite")
+    )
+
+    $logsDir = Split-Path $BasePath -Parent
+    if (-not (Test-Path $logsDir)) {
+        New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
+    }
+
+
+    # Create the database file if it doesn't exist
+    if (-not (Test-Path $BasePath)) {
+        $createTableQuery = @"
+CREATE TABLE IF NOT EXISTS QueryHistory (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Database TEXT NOT NULL,
+    QueryText TEXT NOT NULL,
+    ExecutionStatus TEXT NOT NULL,
+    AffectedRows INTEGER,
+    Timestamp TEXT NOT NULL
+);
+"@
+
+        try {
+            Invoke-SqliteQuery -Query $createTableQuery -DataSource $BasePath | Out-Null
+            Write-DBLiteLog -Level "Info" -Message "Initialized SQLite query history database at $BasePath"
+        }
+        catch {
+            Write-DBLiteLog -Level "Error" -Message "Failed to initialize SQLite database at $($BasePath): $_"
+        }
+    }
+
+    return $BasePath
+}
+
+Export-ModuleMember -Function Write-DBLiteLog, Initialize-LogFile, Format-LogEntry, Write-QueryLog, Initialize-SQLiteDB

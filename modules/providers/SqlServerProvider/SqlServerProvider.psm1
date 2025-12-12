@@ -12,8 +12,9 @@ function New-SqlServerProvider {
         try {
             $this.Connection = New-Object System.Data.SqlClient.SqlConnection $ConnInput
             $this.Connection.Open()
+            $this.Name = $this.Connection.Database
             $this.IsConnected = $true
-            Write-DBLiteLog -Level "Info" -Message "Connected to SQL Server database with connection string: $ConnInput"
+            Write-DBLiteLog -Level "Info" -Message "Connected to SQL Server database $($this.Name) with connection string: $ConnInput"
         }
         catch {
             Write-DBLiteLog -Level "Error" -Message "Failed to connect to SQL Server database with connection string $($ConnInput):`n$_"
@@ -48,6 +49,13 @@ function New-SqlServerProvider {
             $reader = $cmd.ExecuteReader()
             Write-DBLiteLog -Level "Info" -Message "Query executed successfully."
 
+            $affectedRows = $reader.RecordsAffected
+            if ($affectedRows -eq -1) {
+                $affectedRows = 0
+            }
+
+            Write-QueryLog -Database $this.Name -QueryText $Query -ExecutionStatus "Success" -AffectedRows $affectedRows
+
             $table = New-Object System.Data.DataTable
             $table.Load($reader)
             $reader.Close()
@@ -57,6 +65,7 @@ function New-SqlServerProvider {
         catch {
             $errorMessage = $_.Exception.Message
             Write-DBLiteLog -Level "Error" -Message "Failed to execute query: $errorMessage"
+            Write-QueryLog -Database $this.Name -QueryText $Query -ExecutionStatus "Failure"
 
             return [PSCustomObject]@{
                 Error = $errorMessage
@@ -76,6 +85,7 @@ function New-SqlServerProvider {
 
         $reader = $cmd.ExecuteReader()
         Write-DBLiteLog -Level "Info" -Message "Retrieved table list from database."
+        Write-QueryLog -Database $this.Name -QueryText $Query -ExecutionStatus "Success"
 
         $tables = @()
 
