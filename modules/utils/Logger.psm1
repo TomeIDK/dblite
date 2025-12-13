@@ -1,5 +1,3 @@
-Import-Module PSSQLite
-
 <#
 .SYNOPSIS
     Logging utilities for the DBLite module.
@@ -149,72 +147,62 @@ function Write-QueryLog {
 
     )
 
-
     try {
-        $db = Initialize-SQLiteDB
+        $queryHistoryFile = Initialize-QueryHistoryFile
 
-        $insertQuery = @"
-INSERT INTO QueryHistory (Database, QueryText, ExecutionStatus, AffectedRows, Timestamp)
-VALUES (
-    @Database,
-    @QueryText,
-    @ExecutionStatus,
-    @AffectedRows,
-    @Timestamp
-);
-"@
+        if (-not (Test-Path $queryHistoryFile)) {
+            $queryHistory = @()
+        } else {
+            $raw = Get-Content $queryHistoryFile -Raw
 
-        Invoke-SqliteQuery -Query $insertQuery -DataSource $db -SqlParameters @{
-            Database        = $Database
-            QueryText       = $QueryText
+            if ([string]::IsNullOrWhiteSpace($raw) -or $raw.Trim() -eq '{}') {
+                $queryHistory = @()
+            } else {
+                $queryHistory = $raw | ConvertFrom-Json
+                if ($queryHistory -isnot [System.Collections.IEnumerable]) {
+                    $queryHistory = @($queryHistory)
+                }
+            }
+        }
+
+        $entry = [PSCustomObject]@{
+            Database = $Database
+            QueryText = $QueryText
             ExecutionStatus = $ExecutionStatus
-            AffectedRows    = $AffectedRows
-            Timestamp       = $Timestamp.ToString("o")
-        } | Out-Null
+            AffectedRows = $AffectedRows
+            Timestamp = $Timestamp
+        }
+
+        $queryHistory += $entry
+
+        $queryHistory | ConvertTo-Json | Set-Content $queryHistoryFile -Encoding UTF8
+
+
         Write-DBLiteLog -Level "Info" -Message "Logged query execution: '$QueryText' Status: $ExecutionStatus AffectedRows: $AffectedRows"
     }
     catch {
         Write-DBLiteLog -Level "Error" -Message "Failed to log query execution: $($_.Exception.Message)"
     }
-
-
 }
 
-function Initialize-SQLiteDB {
+function Initialize-QueryHistoryFile {
     param(
         [Parameter(Mandatory = $false)]
-        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\logs\query_history.sqlite")
+        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\logs\queryhistory.json")
     )
 
-    $logsDir = Split-Path $BasePath -Parent
-    if (-not (Test-Path $logsDir)) {
-        New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
-    }
-
-
-    # Create the database file if it doesn't exist
+    # Create the file if it doesn't exist
     if (-not (Test-Path $BasePath)) {
-        $createTableQuery = @"
-CREATE TABLE IF NOT EXISTS QueryHistory (
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    Database TEXT NOT NULL,
-    QueryText TEXT NOT NULL,
-    ExecutionStatus TEXT NOT NULL,
-    AffectedRows INTEGER,
-    Timestamp TEXT NOT NULL
-);
-"@
-
         try {
-            Invoke-SqliteQuery -Query $createTableQuery -DataSource $BasePath | Out-Null
-            Write-DBLiteLog -Level "Info" -Message "Initialized SQLite query history database at $BasePath"
+            New-Item -Path $BasePath -ItemType File -Value '{}' | Out-Null
+            Write-DBLiteLog -Level "Info" -Message "Initialized query history file at $BasePath"
         }
         catch {
-            Write-DBLiteLog -Level "Error" -Message "Failed to initialize SQLite database at $($BasePath): $_"
+            Write-DBLiteLog -Level "Error" -Message "Failed to initialize query history file at $($BasePath): $_"
         }
     }
 
     return $BasePath
 }
 
-Export-ModuleMember -Function Write-DBLiteLog, Initialize-LogFile, Format-LogEntry, Write-QueryLog, Initialize-SQLiteDB
+Export-ModuleMember -Function Write-DBLiteLog, Initialize-LogFile, Format-LogEntry, Write-QueryLog, Initialize-QueryHistoryFile

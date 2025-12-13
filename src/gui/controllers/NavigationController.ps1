@@ -26,8 +26,8 @@ function New-NavigationController {
             [string]$ViewName
         )
 
-        # Dispose previous view
-        if ($null -ne $this.CurrentView) {
+        # Dispose previous view, unless it is Query History
+        if ($null -ne $this.CurrentView -and $ViewName -ne "Query History") {
             $this.ContentPanel.Controls.Clear()
             $this.CurrentView.Dispose()
         }
@@ -46,8 +46,11 @@ function New-NavigationController {
             $view.Location = New-Object System.Drawing.Point(20, 20)
         }
 
-        $this.ContentPanel.Controls.Add($view, 0, 0)
-        $this.CurrentView = $view
+        if ($ViewName -ne "Query History") {
+            $this.ContentPanel.Controls.Add($view, 0, 0)
+            $this.CurrentView = $view
+        }
+
 
         foreach ($key in $this.Buttons.Keys) {
             $this.Buttons[$key].BackColor = [System.Drawing.Color]::FromArgb(250, 250, 250)

@@ -1,4 +1,3 @@
-Import-Module PSSQLite
 Import-Module "$PSScriptRoot\..\..\..\modules\utils\Logger.psm1" -Force
 
 function Get-QueryHistory {
@@ -6,26 +5,15 @@ function Get-QueryHistory {
         [Parameter(Mandatory = $true, Position = 0)]
         [string] $Database,
         [Parameter(Mandatory = $false, Position = 1)]
-        [ValidateSet("Success", "Failure")] $ExecutionStatus,
-        [Parameter(Mandatory = $false)]
-        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\..\logs\query_history.sqlite")
+        [ValidateSet("Success", "Failure")] $ExecutionStatus
     )
 
-    Initialize-SQLiteDB
+    $queryHistoryFile = Initialize-QueryHistoryFile
 
-    $query = "SELECT * FROM QueryHistory WHERE Database = @Database"
-    $params = @{ Database = $Database }
+    $queryHistory = Get-Content $queryHistoryFile -Raw | ConvertFrom-Json
+    $results = $queryHistory | Where-Object { $_.Database -eq $Database }
 
-    if ($ExecutionStatus) {
-        $query += " AND ExecutionStatus = @ExecutionStatus"
-        $params.ExecutionStatus = $ExecutionStatus
-    }
-
-    $query += " ORDER BY Timestamp DESC"
-
-    $history = Invoke-SqliteQuery -DataSource $BasePath -Query $query -SqlParameters $params
-
-    return $history
+    return $results
 }
 
 Export-ModuleMember -Function Get-QueryHistory
