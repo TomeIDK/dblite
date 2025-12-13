@@ -98,6 +98,96 @@ function New-SqlServerProvider {
         return $tables
     } -Force
 
+    $provider | Add-Member -MemberType ScriptMethod -Name NewBackup -Value {
+        param(
+            [Parameter(Mandatory = $true, Position = 0)]
+            [string] $BackupLocation,
+
+            [Parameter(Mandatory = $true, Position = 1)]
+            [ValidateSet("Full", "Differential")] $BackupType,
+
+            [switch] $WithCompression
+        )
+
+        if (-not $this.IsConnected) {
+            Write-DBLiteLog -Level "Error" -Message "Attempted to get create backup while not connected to the database."
+            throw "Not connected to the database."
+        }
+
+        $query = "BACKUP DATABASE [$($this.Name)] TO DISK = N'$($BackupLocation)' WITH $($BackupType.ToUpper())"
+
+        if ($WithCompression) {
+            $query += ", COMPRESSION"
+        }
+
+        $query += ";"
+
+        try {
+            Write-DBLiteLog -Level "Info" -Message "Creating $($BackupType.ToLower()) backup at $($BackupLocation)..."
+
+            $cmd = $this.Connection.CreateCommand()
+            $cmd.CommandText = $query
+            $reader = $cmd.ExecuteNonQuery()
+
+            Write-DBLiteLog -Level "Info" -Message "Backup created successfully."
+            Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Success"
+        }
+        catch {
+            $errorMessage = $_.Exception.Message
+            Write-DBLiteLog -Level "Error" -Message "Failed to create backup: $errorMessage"
+            Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Failure"
+        }
+    } -Force
+
+    $provider | Add-Member -MemberType ScriptMethod -Name GetBackupHistory -Value {
+
+        if (-not $this.IsConnected) {
+            Write-DBLiteLog -Level "Error" -Message "Attempted to get backup history while not connected to the database."
+            throw "Not connected to the database."
+        }
+
+        $query = @"
+SELECT
+    bs.database_name,
+    bs.backup_start_date,
+    bs.backup_finish_date,
+    bs.type AS backup_type,
+    bmf.physical_device_name,
+    bs.user_name
+FROM msdb.dbo.backupset bs
+JOIN msdb.dbo.backupmediafamily bmf
+    ON bs.media_set_id = bmf.media_set_id
+WHERE bs.database_name = DB_NAME()
+ORDER BY bs.backup_finish_date DESC;
+"@
+
+        try {
+            Write-DBLiteLog -Level "Info" -Message "Retrieving backup history..."
+
+            $cmd = $this.Connection.CreateCommand()
+            $cmd.CommandText = $query
+            $reader = $cmd.ExecuteReader()
+
+            Write-DBLiteLog -Level "Info" -Message "Backup history retrieved successfully."
+
+            $table = New-Object System.Data.DataTable
+            $table.Load($reader)
+            $reader.Close()
+
+            return $table
+        }
+        catch {
+            $errorMessage = $_.Exception.Message
+            Write-DBLiteLog -Level "Error" -Message "Failed to retrieve backup history: $errorMessage"
+            Write-QueryLog -Database $this.Name -QueryText ($query -replace "`r?`n", " ") -ExecutionStatus "Failure"
+
+            return [PSCustomObject]@{
+                Error = $errorMessage
+            }
+        }
+
+    } -Force
+
     return $provider
 }
 

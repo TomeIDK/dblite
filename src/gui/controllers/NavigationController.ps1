@@ -27,7 +27,7 @@ function New-NavigationController {
         )
 
         # Dispose previous view, unless it is Query History
-        if ($null -ne $this.CurrentView -and $ViewName -ne "Query History") {
+        if ($null -ne $this.CurrentView -and $ViewName -ne "Query History" -and $ViewName -ne "Backup Manager") {
             $this.ContentPanel.Controls.Clear()
             $this.CurrentView.Dispose()
         }
@@ -46,7 +46,7 @@ function New-NavigationController {
             $view.Location = New-Object System.Drawing.Point(20, 20)
         }
 
-        if ($ViewName -ne "Query History") {
+        if ($ViewName -ne "Query History" -and $ViewName -ne "Backup Manager") {
             $this.ContentPanel.Controls.Add($view, 0, 0)
             $this.CurrentView = $view
         }

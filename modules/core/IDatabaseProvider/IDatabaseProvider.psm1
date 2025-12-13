@@ -33,14 +33,14 @@ function New-IDatabaseProvider {
         throw "GetTables() not implemented yet"
     }
 
-    $provider | Add-Member -MemberType ScriptMethod -Name GetColumns -Value {
-        Write-DBLiteLog -Level "Error" -Message "GetColumns() was called on a provider that has no implementation."
-        throw "GetColumns() not implemented yet"
+    $provider | Add-Member -MemberType ScriptMethod -Name NewBackup -Value {
+        Write-DBLiteLog -Level "Error" -Message "NewBackup() was called on a provider that has no implementation."
+        throw "NewBackup() not implemented yet"
     }
 
-    $provider | Add-Member -MemberType ScriptMethod -Name GetRelationships -Value {
-        Write-DBLiteLog -Level "Error" -Message "GetRelationships() was called on a provider that has no implementation."
-        throw "GetRelationships() not implemented yet"
+    $provider | Add-Member -MemberType ScriptMethod -Name GetBackupHistory -Value {
+        Write-DBLiteLog -Level "Error" -Message "GetBackupHistory() was called on a provider that has no implementation."
+        throw "GetBackupHistory() not implemented yet"
     }
 
     return $provider
