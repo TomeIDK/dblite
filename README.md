@@ -7,11 +7,11 @@ A lightweight Powershell database inspector with WinForms.
 - [x] WinForms GUI
 - [x] Database aliases
 - [x] Logging module
-- [ ] Query editor
-- [ ] Query history
+- [x] Query editor
+- [x] Query history
 - [ ] Performance analysis
 - [ ] Index analysis
-- [ ] Backup manager
+- [x] Backup manager
 - [ ] Schema browser
 - [ ] Schema visualization
 - [x] Error handling with informative messages
