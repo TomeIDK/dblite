@@ -106,6 +106,7 @@ function New-SqlServerProvider {
             [Parameter(Mandatory = $true, Position = 1)]
             [ValidateSet("Full", "Differential")] $BackupType,
 
+            [Parameter(Position = 2)]
             [switch] $WithCompression
         )
 
@@ -114,10 +115,14 @@ function New-SqlServerProvider {
             throw "Not connected to the database."
         }
 
-        $query = "BACKUP DATABASE [$($this.Name)] TO DISK = N'$($BackupLocation)' WITH $($BackupType.ToUpper())"
+        $query = "BACKUP DATABASE [$($this.Name)] TO DISK = N'$($BackupLocation)'"
 
-        if ($WithCompression) {
-            $query += ", COMPRESSION"
+        if ($BackupType -eq "Differential") {
+            $query += " WITH $($BackupType.ToUpper())"
+            if ($WithCompression) { $query += ", COMPRESSION" }
+        }
+        elseif ($BackupType -eq "Full" -and $WithCompression) {
+            $query += " WITH COMPRESSION"
         }
 
         $query += ";"
@@ -127,7 +132,7 @@ function New-SqlServerProvider {
 
             $cmd = $this.Connection.CreateCommand()
             $cmd.CommandText = $query
-            $reader = $cmd.ExecuteNonQuery()
+            $cmd.ExecuteNonQuery()
 
             Write-DBLiteLog -Level "Info" -Message "Backup created successfully."
             Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Success"
@@ -140,7 +145,6 @@ function New-SqlServerProvider {
     } -Force
 
     $provider | Add-Member -MemberType ScriptMethod -Name GetBackupHistory -Value {
-
         if (-not $this.IsConnected) {
             Write-DBLiteLog -Level "Error" -Message "Attempted to get backup history while not connected to the database."
             throw "Not connected to the database."
@@ -179,12 +183,60 @@ ORDER BY bs.backup_finish_date DESC;
         catch {
             $errorMessage = $_.Exception.Message
             Write-DBLiteLog -Level "Error" -Message "Failed to retrieve backup history: $errorMessage"
-            Write-QueryLog -Database $this.Name -QueryText ($query -replace "`r?`n", " ") -ExecutionStatus "Failure"
+            Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Failure"
 
             return [PSCustomObject]@{
                 Error = $errorMessage
             }
         }
+
+    } -Force
+
+    $provider | Add-Member -MemberType ScriptMethod -Name GetEdition -Value {
+        if (-not $this.IsConnected) {
+            Write-DBLiteLog -Level "Error" -Message "Attempted to get SQL Server edition while not connected to the database."
+            throw "Not connected to the database."
+        }
+
+        try {
+            $query = "SELECT SERVERPROPERTY('Edition')"
+
+            $cmd = $this.Connection.CreateCommand()
+            $cmd.CommandText = $query
+            Write-DBLiteLog -Level "Info" -Message "SQL Server Edition retrieved successfully."
+
+            return $cmd.ExecuteScalar()
+        }
+        catch {
+            Write-DBLiteLog -Level "Error" -Message "Failed to retrieve SQL Server edition: $($_.Exception.Message)"
+        }
+
+    } -Force
+
+    $provider | Add-Member -MemberType ScriptMethod -Name GetLatestBackup -Value {
+        if (-not $this.IsConnected) {
+            Write-DBLiteLog -Level "Error" -Message "Attempted to get latest backup while not connected to the database."
+            throw "Not connected to the database."
+        }
+
+        try {
+            $query = @"
+SELECT TOP 1 bs.backup_finish_date
+FROM msdb.dbo.backupset bs
+WHERE bs.database_name = DB_NAME()
+ORDER BY bs.backup_finish_date DESC;
+"@
+
+            $cmd = $this.Connection.CreateCommand()
+            $cmd.CommandText = $query
+            Write-DBLiteLog -Level "Info" -Message "Latest backup retrieved successfully."
+
+            return $cmd.ExecuteScalar()
+        }
+        catch {
+            Write-DBLiteLog -Level "Error" -Message "Failed to retrieve latest backup: $($_.Exception.Message)"
+        }
+
 
     } -Force
 

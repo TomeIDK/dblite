@@ -43,6 +43,11 @@ function New-IDatabaseProvider {
         throw "GetBackupHistory() not implemented yet"
     }
 
+    $provider | Add-Member -MemberType ScriptMethod -Name GetLatestBackup -Value {
+        Write-DBLiteLog -Level "Error" -Message "GetLatestBackup() was called on a provider that has no implementation."
+        throw "GetLatestBackup() not implemented yet"
+    }
+
     return $provider
 }
 

@@ -108,28 +108,48 @@ $btnSave = New-StyledButton -Name "Save Query" -Icon ([System.Drawing.Image]::Fr
 $btnSave.Add_Click({
         $modal = New-Object System.Windows.Forms.Form
         $modal.Text = "Save Query"
-        $modal.Size = New-Object System.Drawing.Size(350, 150)
         $modal.StartPosition = "CenterParent"
         $modal.FormBorderStyle = "FixedDialog"
         $modal.MaximizeBox = $false
         $modal.MinimizeBox = $false
+        $modal.AutoSize = $true
+        $modal.AutoSizeMode = 'GrowAndShrink'
+
+        $layout = New-Object System.Windows.Forms.TableLayoutPanel
+        $layout.AutoSize = $true
+        $layout.AutoSizeMode = 'GrowAndShrink'
+        $layout.Padding = 10
+        $layout.ColumnCount = 1
+        $layout.RowCount = 3
+        $layout.Dock = 'Fill'
 
         $label = New-Object System.Windows.Forms.Label
-        $label.Text = "Enter a name:"
-        $label.Location = New-Object System.Drawing.Point(10, 10)
+        $label.Text = "Enter a name for your query"
         $label.AutoSize = $true
 
         $nameBox = New-Object System.Windows.Forms.TextBox
-        $nameBox.Location = New-Object System.Drawing.Point(10, 35)
         $nameBox.Width = 300
+        $nameBox.Margin = '0,4,0,10'
+
+        $buttonPanel = New-Object System.Windows.Forms.FlowLayoutPanel
+        $buttonPanel.AutoSize = $true
+        $buttonPanel.FlowDirection = 'LeftToRight'
+        $buttonPanel.Anchor = 'None'
+        $buttonPanel.Padding = '0,5,0,0'
 
         $btnOk = New-Object System.Windows.Forms.Button
-        $btnOk.Text = "OK"
-        $btnOk.Location = New-Object System.Drawing.Point(140, 70)
+        $btnOk.Text = "Save"
+        $btnOk.Font = New-Object System.Drawing.Font(
+            $btnOk.Font.FontFamily,
+            $btnOk.Font.Size,
+            [System.Drawing.FontStyle]::Bold
+        )
 
         $btnCancel = New-Object System.Windows.Forms.Button
         $btnCancel.Text = "Cancel"
-        $btnCancel.Location = New-Object System.Drawing.Point(220, 70)
+
+        $modal.AcceptButton = $btnOk
+        $modal.CancelButton = $btnCancel
 
         $btnOk.Add_Click({
                 $name = $nameBox.Text.Trim()
@@ -139,20 +159,26 @@ $btnSave.Add_Click({
                     $modal.Close()
                 }
                 else {
-                    [System.Windows.Forms.MessageBox]::Show("Name cannot be empty.")
+                    [System.Windows.Forms.MessageBox]::Show(
+                        "Name cannot be empty.",
+                        "Validation",
+                        'OK',
+                        'Warning'
+                    )
                 }
             })
 
-        $btnCancel.Add_Click({
-                $modal.Close()
-            })
+        $btnCancel.Add_Click({ $modal.Close() })
 
-        $modal.Controls.Add($label)
-        $modal.Controls.Add($nameBox)
-        $modal.Controls.Add($btnOk)
-        $modal.Controls.Add($btnCancel)
+        $buttonPanel.Controls.AddRange(@($btnOk, $btnCancel))
+        $layout.Controls.Add($label, 0, 0)
+        $layout.Controls.Add($nameBox, 0, 1)
+        $layout.Controls.Add($buttonPanel, 0, 2)
 
+        $modal.Controls.Add($layout)
+        $modal.Add_Shown({ $nameBox.Focus() })
         $modal.ShowDialog()
+
     }.GetNewClosure())
 
 $btnClear = New-StyledButton -Name "Clear" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "trash-icon-white-small.png")))

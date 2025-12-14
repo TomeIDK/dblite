@@ -13,7 +13,7 @@ function New-MainForm {
     )
 
     $form = New-Object System.Windows.Forms.Form
-    $form.Text = "DBLite"
+    $form.Text = "DBLite | $($Provider.Name)"
     $form.Size = New-Object System.Drawing.Size(1100, 700)
     $form.StartPosition = "CenterScreen"
     $form.FormBorderStyle = "FixedSingle"
