@@ -1,34 +1,22 @@
 <#
 .SYNOPSIS
-    Logging utilities for the DBLite module.
-
-.DESCRIPTION
-    Provides functions to write and format log entries and ensure the logs folder and today's logfile exist.
-    Exported functions: Write-DBLiteLog, Initialize-LogFile, Format-LogEntry.
-
-.SYNTAX
-    Import-Module <PathTo>\Logger.psm1
-#>
-
-
-<#
-.SYNOPSIS
     Write a log entry to the DBLite log file.
 
 .DESCRIPTION
-    Writes a timestamped, leveled entry to today's DBLite log file and optionally forwards the formatted entry to the GUI.
-
-.SYNTAX
-    Write-DBLiteLog [-Level <Debug|Info|Warning|Error>] -Message <string> [-Timestamp <datetime>] [<CommonParameters>]
+    Writes a timestamped, leveled entry to today's DBLite log file. Also forwards formatted messages to the host or GUI as appropriate.
 
 .PARAMETERS
-    Level     - Log level (Debug, Info, Warning, Error)
-    Message   - Text to write to the log
-    Timestamp - Date/time for the entry (DateTime); used for formatting
+    Level
+        Log level (Debug, Info, Warning, Error). Mandatory.
+
+    Message
+        Text to write to the log. Mandatory.
+
+    Timestamp
+        Optional date/time for the entry; defaults to current time.
 
 .EXAMPLE
-    Write-DBLiteLog -Level Info -Timestamp (Get-Date) -Message "Database initialized."
-
+    Write-DBLiteLog -Level Info -Message "Database initialized." -Timestamp (Get-Date)
 #>
 function Write-DBLiteLog {
     param(
@@ -60,15 +48,16 @@ function Write-DBLiteLog {
     Creates the logs directory if missing, creates today's logfile (dbliteDDMMYYYY.log),
     and removes log files older than 30 days.
 
-.SYNTAX
-    Initialize-LogFile
+.PARAMETERS
+    BasePath
+        Optional base path for the logs folder. Defaults to <module root>\logs.
 
 .RETURNS
-    String: full path to today's logfile.
+    String: full path to today's log file.
 #>
 function Initialize-LogFile {
     param(
-        [string] $BasePath = (Join-Path $PSScriptRoot "\..\..\logs")
+        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\..\logs")
     )
 
     $logFolder = $BasePath
@@ -96,22 +85,23 @@ function Initialize-LogFile {
     Format a timestamped, leveled log entry.
 
 .DESCRIPTION
-    Builds a consistent formatted log string for disk or forwarding:
-    "[LEVEL] yyyy-MM-dd HH:mm:ss: Message".
-
-.SYNTAX
-    Format-LogEntry [-Level <Debug|Info|Warning|Error>] -Timestamp <datetime> -Message <string>
+    Builds a consistently formatted log string: "[LEVEL] yyyy-MM-dd HH:mm:ss: Message".
 
 .PARAMETERS
-    Level     - Log level (Debug, Info, Warning, Error)
-    Timestamp - Date/time used in the formatted entry
-    Message   - Message text to format
+    Level
+        Log level (Debug, Info, Warning, Error). Mandatory.
 
-.EXAMPLE
-    Format-LogEntry -Level Info -Timestamp (Get-Date) -Message "Service started"
+    Timestamp
+        Date/time used in the formatted entry. Mandatory.
+
+    Message
+        Message text to format. Mandatory.
 
 .RETURNS
     String: the formatted log entry.
+
+.EXAMPLE
+    Format-LogEntry -Level Info -Timestamp (Get-Date) -Message "Service started"
 #>
 function Format-LogEntry {
     param(
@@ -128,6 +118,34 @@ function Format-LogEntry {
     return "[$($Level.ToUpper())] $($Timestamp.ToString("yyyy-MM-dd HH:mm:ss")): $Message"
 }
 
+<#
+.SYNOPSIS
+    Log an executed SQL query to the query history file.
+
+.DESCRIPTION
+    Adds an entry to queryhistory.json including database name, query text, execution status, affected rows, and timestamp.
+    Logs query execution success or failure to the main DBLite log.
+
+.PARAMETERS
+    Database
+        Name of the database where the query was executed. Mandatory.
+
+    QueryText
+        SQL text of the executed query. Mandatory.
+
+    ExecutionStatus
+        "Success" or "Failure". Defaults to "Success".
+
+    AffectedRows
+        Number of rows affected by the query. Defaults to 0.
+
+    Timestamp
+        Optional timestamp of execution. Defaults to current time.
+
+.EXAMPLE
+    Write-QueryLog -Database "TestDb" -QueryText "SELECT * FROM Users" -ExecutionStatus "Success" -AffectedRows 10
+
+#>
 function Write-QueryLog {
     param(
         [Parameter(Mandatory = $true, Position = 0)]
@@ -150,6 +168,7 @@ function Write-QueryLog {
     try {
         $queryHistoryFile = Initialize-QueryHistoryFile
 
+        # Return an empty array if the file does not exist. Otherwise retrieve the contents
         if (-not (Test-Path $queryHistoryFile)) {
             $queryHistory = @()
         } else {
@@ -165,6 +184,7 @@ function Write-QueryLog {
             }
         }
 
+        # Create an object with given parameters and add it to the json
         $entry = [PSCustomObject]@{
             Database = $Database
             QueryText = $QueryText
@@ -185,10 +205,25 @@ function Write-QueryLog {
     }
 }
 
+<#
+.SYNOPSIS
+    Ensure the query history file exists.
+
+.DESCRIPTION
+    Creates queryhistory.json if missing and logs its creation.
+    Returns the full path to the query history file.
+
+.PARAMETERS
+    BasePath
+        Optional full path to the query history file. Defaults to <module root>\logs\queryhistory.json.
+
+.RETURNS
+    String: full path to the query history file.
+#>
 function Initialize-QueryHistoryFile {
     param(
         [Parameter(Mandatory = $false)]
-        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\logs\queryhistory.json")
+        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\..\logs\queryhistory.json")
     )
 
     # Create the file if it doesn't exist

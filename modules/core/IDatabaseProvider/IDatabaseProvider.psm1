@@ -1,4 +1,54 @@
-Import-Module "$PSScriptRoot\..\..\utils\Logger.psm1" -Force
+<#
+.SYNOPSIS
+Creates a new database provider object implementing the base interface.
+
+.DESCRIPTION
+Initializes a database provider object with default properties and placeholder methods for configuration, connection management, query execution, table retrieval, and backup operations. Each method logs an error and throws if called without a proper implementation. Designed as a template for concrete database provider implementations.
+
+.PROPERTIES
+Name
+    The provider's name.
+Config
+    Configuration settings as a hashtable.
+IsConnected
+    Boolean indicating connection status.
+Connection
+    Placeholder for the connection object.
+
+.METHODS
+Configure
+    Placeholder method for configuring the provider. Throws "not implemented" if called.
+
+Connect
+    Placeholder method to establish a database connection. Throws "not implemented" if called.
+
+Disconnect
+    Placeholder method to close a database connection. Throws "not implemented" if called.
+
+RunQuery
+    Placeholder method to execute a SQL query. Throws "not implemented" if called.
+
+GetTables
+    Placeholder method to retrieve database tables. Throws "not implemented" if called.
+
+NewBackup
+    Placeholder method to create a database backup. Throws "not implemented" if called.
+
+GetBackupHistory
+    Placeholder method to retrieve the history of backups. Throws "not implemented" if called.
+
+GetLatestBackup
+    Placeholder method to retrieve the latest backup. Throws "not implemented" if called.
+
+.RETURNS
+A PSCustomObject representing a database provider with properties and unimplemented methods.
+
+.EXAMPLE
+$provider = New-IDatabaseProvider
+$provider.Name = "SqlServer"
+$provider.Configure()  # Will throw an error until implemented
+#>
+Import-Module "$PSScriptRoot\..\..\utils\Logger\Logger.psm1" -Force
 
 function New-IDatabaseProvider {
     $provider = [PSCustomObject]@{

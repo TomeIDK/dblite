@@ -122,6 +122,7 @@ $browseBtn = New-Object System.Windows.Forms.Button
 $browseBtn.Text = 'Browse...'
 $browseBtn.Location = '420,48'
 
+# Open a file dialog to choose where to save the backup
 $browseBtn.Add_Click({
         $dialog = New-Object System.Windows.Forms.SaveFileDialog
         $dialog.RestoreDirectory = $true
@@ -179,6 +180,8 @@ if ($edition -like '*Express*') {
 # Button Panel Buttons
 # =====================
 $btnCreateBackup = New-StyledButton -Name "Create Backup" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "add-icon-white-small.png")))
+
+# Open a modal to confirm creating a backup then save it
 $btnCreateBackup.Add_Click({
         if (-not $pathTextBox.Text) {
             [System.Windows.Forms.MessageBox]::Show('Please select a backup location.')
@@ -237,11 +240,13 @@ $btnCreateBackup.Add_Click({
         $btnNo = New-Object System.Windows.Forms.Button
         $btnNo.Text = "Cancel"
 
+        # Create the backup in the selected location
         $btnYes.Add_Click({
                 $Provider.NewBackup($pathTextBox.Text, $typeComboBox.SelectedItem, $compressionCheckbox.Checked)
                 $modal.Close()
             })
 
+        # Cancel the backup
         $btnNo.Add_Click({
                 $modal.Close()
             })
@@ -260,6 +265,8 @@ $btnCreateBackup.Add_Click({
     }.GetNewClosure())
 
 $btnHistory = New-StyledButton -Name "History" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "history-icon-white-small.png")))
+
+# Open a DataGridView with backup history for this database
 $btnHistory.Add_Click({
         $Provider.GetBackupHistory() | Out-GridView -Title "DBLite | $($Provider.Name) Backup History"
     })

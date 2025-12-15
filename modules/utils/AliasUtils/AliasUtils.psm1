@@ -1,17 +1,4 @@
-Import-Module "$PSScriptRoot\Logger.psm1" -Force
-
-<#
-.SYNOPSIS
-    Alias utilities for the DBLite module.
-
-.DESCRIPTION
-    Provides functions to read alias mappings from config\aliases.json and to resolve alias names to connection strings.
-    Uses Write-DBLiteLog for logging.
-    Exported functions: Resolve-ConnectionString.
-
-.SYNTAX
-    Import-Module <PathTo>\AliasUtils.psm1
-#>
+Import-Module "$PSScriptRoot\..\Logger\Logger.psm1" -Force
 
 <#
 .SYNOPSIS
@@ -21,18 +8,12 @@ Import-Module "$PSScriptRoot\Logger.psm1" -Force
     Ensures the aliases.json file exists in the module config folder. If missing, creates a default aliases.json and logs the action.
     Attempts to read and convert the JSON to a hashtable. On failure, logs a warning and returns an empty hashtable.
 
-.SYNTAX
-    Get-DBLiteAliases
-
 .RETURNS
-    Hashtable: mapping of alias name -> connection string.
-
-.EXAMPLE
-    $aliases = Get-DBLiteAliases
+    Hashtable: Mapping of alias names to their respective connection strings.
 #>
 function Get-DBLiteAliases {
     param(
-        [string] $AliasFileLocation = "$PSScriptRoot\..\..\config\aliases.json"
+        [string] $AliasFileLocation = "$PSScriptRoot\..\..\..\config\aliases.json"
     )
 
     $aliasFile = $AliasFileLocation
@@ -65,15 +46,12 @@ function Get-DBLiteAliases {
     If an alias exists, returns the mapped connection string and logs the resolution.
     If not found, logs that the input will be used as-is and returns the original input.
 
-.SYNTAX
-    Resolve-ConnectionString -InputString <string>
-
 .PARAMETERS
     InputString
         The alias name or connection string to resolve. Mandatory.
 
 .RETURNS
-    String: resolved connection string (either from aliases.json or the original input).
+    String: The resolved connection string (either from aliases.json or the original input).
 
 .EXAMPLE
     Resolve-ConnectionString -InputString "MyDatabase"

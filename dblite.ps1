@@ -4,7 +4,7 @@ param(
 )
 
 # Import modules
-Import-Module "$PSScriptRoot\modules\utils\AliasUtils.psm1" -Force
+Import-Module "$PSScriptRoot\modules\utils\AliasUtils\AliasUtils.psm1" -Force
 Import-Module "$PSScriptRoot\modules\core\IDatabaseProvider\IDatabaseProvider.psm1" -Force
 Import-Module "$PSScriptRoot\modules\core\DatabaseProviderBase\DatabaseProviderBase.psm1" -Force
 Import-Module "$PSScriptRoot\modules\providers\SqlServerProvider\SqlServerProvider.psm1" -Force

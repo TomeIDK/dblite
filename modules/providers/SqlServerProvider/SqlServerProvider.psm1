@@ -1,4 +1,47 @@
-Import-Module "$PSScriptRoot\..\..\utils\Logger.psm1" -Force
+<#
+.SYNOPSIS
+Creates a SQL Server database provider with full connection, query, and backup capabilities.
+
+.DESCRIPTION
+Initializes a database provider object for SQL Server, implementing methods for connecting, disconnecting, running queries, retrieving tables, managing backups, and retrieving SQL Server edition information. All operations are logged using the Logger module, and query executions are logged in the query history.
+
+.METHODS
+Connect
+    Establishes a connection to a SQL Server database using a connection string. Sets IsConnected to $true on success. Throws an error if connection fails.
+
+Disconnect
+    Closes the current SQL Server connection and sets IsConnected to $false.
+
+RunQuery
+    Executes a SQL query on the connected database. Returns a DataTable with results on success or a PSCustomObject with an error message on failure. Logs execution success or failure.
+
+GetTables
+    Retrieves the list of base tables in the connected database. Returns an array of table names. Throws an error if not connected.
+
+NewBackup
+    Creates a database backup at the specified location. Supports "Full" and "Differential" backup types and optional compression. Logs success or failure.
+
+GetBackupHistory
+    Retrieves the backup history for the connected database. Returns a DataTable with backup details including start/finish dates, type, file path, and user. Logs failures.
+
+GetEdition
+    Returns the SQL Server edition of the connected database instance. Throws an error if not connected.
+
+GetLatestBackup
+    Returns the finish date of the most recent backup for the connected database. Throws an error if not connected.
+
+.RETURNS
+A PSCustomObject representing a SQL Server database provider with fully implemented methods for connection, query execution, table listing, and backup management.
+
+.EXAMPLE
+$provider = New-SqlServerProvider
+$provider.Connect("Server=.;Database=TestDb;Integrated Security=True")
+$tables = $provider.GetTables()
+$provider.RunQuery("SELECT TOP 10 * FROM Users")
+$provider.NewBackup("C:\Backups\TestDb.bak", "Full", $WithCompression)
+$provider.Disconnect()
+#>
+Import-Module "$PSScriptRoot\..\..\utils\Logger\Logger.psm1" -Force
 
 function New-SqlServerProvider {
     $provider = New-DatabaseProviderBase -Name "SQL Server"
@@ -115,6 +158,7 @@ function New-SqlServerProvider {
             throw "Not connected to the database."
         }
 
+        # Build the query
         $query = "BACKUP DATABASE [$($this.Name)] TO DISK = N'$($BackupLocation)'"
 
         if ($BackupType -eq "Differential") {
@@ -127,6 +171,7 @@ function New-SqlServerProvider {
 
         $query += ";"
 
+        # Execute the query
         try {
             Write-DBLiteLog -Level "Info" -Message "Creating $($BackupType.ToLower()) backup at $($BackupLocation)..."
 

@@ -1,5 +1,5 @@
 BeforeAll {
-    Import-Module "$PSScriptRoot\..\..\modules\utils\Logger.psm1" -Force
+    Import-Module "$PSScriptRoot\..\..\modules\utils\Logger\Logger.psm1" -Force
 }
 
 Describe "Write-DBLiteLog" {

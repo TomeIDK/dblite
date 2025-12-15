@@ -7,34 +7,42 @@ param(
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-Import-Module (Join-Path $PSScriptRoot "..\controllers\QueryEditorController.psm1") -Force
-Import-Module "$PSScriptRoot\..\..\..\modules\utils\Logger.psm1" -Force
+Import-Module (Join-Path $PSScriptRoot "..\..\..\modules\controllers\QueryEditorController\QueryEditorController.psm1") -Force
+Import-Module "$PSScriptRoot\..\..\..\modules\utils\Logger\Logger.psm1" -Force
 
 $AssetsPath = Join-Path $PSScriptRoot "..\assets"
 
 
+# =====================
 # Top bar
+# =====================
 $topBar = New-Object System.Windows.Forms.Panel
 $topBar.Height = 50
 $topBar.Dock = "Top"
 $topBar.BackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
 $topBar.Padding = [System.Windows.Forms.Padding]::new(10)
 
+# =====================
 # Title label
+# =====================
 $title = New-Object System.Windows.Forms.Label
 $title.Text = "Query Editor"
 $title.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
 $title.AutoSize = $true
 $title.Location = New-Object System.Drawing.Point(10, 10)
 
+# =====================
 # Buttons container
+# =====================
 $btnPanel = New-Object System.Windows.Forms.FlowLayoutPanel
 $btnPanel.FlowDirection = "RightToLeft"
 $btnPanel.Dock = "Fill"
 $btnPanel.WrapContents = $false
 $btnPanel.AutoSize = $true
 
+# =====================
 # Button factory
+# =====================
 function New-StyledButton {
     param(
         [Parameter(Mandatory = $true)]
@@ -63,7 +71,9 @@ function New-StyledButton {
     return $btn
 }
 
+# =====================
 # SQL input textbox
+# =====================
 $sqlBox = New-Object System.Windows.Forms.TextBox
 $sqlBox.Multiline = $true
 $sqlBox.ScrollBars = "Vertical"
@@ -75,7 +85,9 @@ $sqlBox.Text = "SELECT * FROM Products;"
 $sqlBox.BorderStyle = "FixedSingle"
 
 
+# =====================
 # Saved queries title
+# =====================
 $savedTitle = New-Object System.Windows.Forms.Label
 $savedTitle.Text = "Saved queries"
 $savedTitle.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
@@ -83,7 +95,9 @@ $savedTitle.Dock = "Top"
 $savedTitle.AutoSize = $true
 
 
+# =====================
 # Saved queries listbox
+# =====================
 $savedList = New-Object System.Windows.Forms.ListBox
 $savedList.Font = New-Object System.Drawing.Font("Segoe UI", 10)
 $savedList.Dock = "Fill"
@@ -97,14 +111,20 @@ $savedList.Add_DoubleClick({
     }.GetNewClosure())
 Add-ListBoxSavedQueries -ListBox $savedList
 
+# =====================
 # Buttons
+# =====================
 $btnRun = New-StyledButton -Name "Run" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "run-icon-white-small.png")))
+
+# Run the query in the textbox
 $btnRun.Add_Click({
         $dt = $Provider.RunQuery($sqlBox.Text)
         $dt | Out-GridView -Title "DBLite | Query Results"
     }.GetNewClosure())
 
 $btnSave = New-StyledButton -Name "Save Query" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "save-icon-white-small.png")))
+
+# Open a modal prompting the user to enter a name to save the query in the text box
 $btnSave.Add_Click({
         $modal = New-Object System.Windows.Forms.Form
         $modal.Text = "Save Query"
@@ -151,6 +171,7 @@ $btnSave.Add_Click({
         $modal.AcceptButton = $btnOk
         $modal.CancelButton = $btnCancel
 
+        # Save the query under the given name
         $btnOk.Add_Click({
                 $name = $nameBox.Text.Trim()
                 if ($name) {
@@ -168,6 +189,7 @@ $btnSave.Add_Click({
                 }
             })
 
+        # Cancel saving the query
         $btnCancel.Add_Click({ $modal.Close() })
 
         $buttonPanel.Controls.AddRange(@($btnOk, $btnCancel))
@@ -182,6 +204,8 @@ $btnSave.Add_Click({
     }.GetNewClosure())
 
 $btnClear = New-StyledButton -Name "Clear" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "trash-icon-white-small.png")))
+
+# Clear the text box
 $btnClear.Add_Click({
         $sqlBox.Text = ""
     }.GetNewClosure())
@@ -189,7 +213,9 @@ $btnClear.Add_Click({
 $btnPanel.Controls.AddRange(@($btnRun, $btnSave, $btnClear))
 
 
+# =====================
 # Layout builder
+# =====================
 $viewLayout = New-Object System.Windows.Forms.TableLayoutPanel
 $viewLayout.Dock = "Fill"
 $viewLayout.RowCount = 5
