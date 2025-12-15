@@ -3,7 +3,35 @@ Add-Type -AssemblyName System.Drawing
 
 $ViewsPath = Join-Path $PSScriptRoot "\views"
 
+<#
+.SYNOPSIS
+    Main GUI form and navigation controller for DBLite.
 
+.DESCRIPTION
+    Provides the main Windows Forms GUI including sidebar navigation, content panels, and view management.
+    Handles dynamic loading of views, navigation button events, and integrates with a database provider.
+    Exported functions: New-MainForm, New-NavigationController, Start-DBLiteGUI.
+
+.SYNTAX
+    Import-Module <PathTo>\MainForm.psm1
+#>
+
+<#
+.SYNOPSIS
+    Create the main DBLite GUI form.
+
+.DESCRIPTION
+    Initializes the main form with a sidebar, content panel, and navigation buttons.
+    Integrates with a database provider object to display current database information.
+    Dynamically loads views when navigation buttons are clicked.
+
+.PARAMETERS
+    Provider
+        Database provider object to associate with the GUI. Mandatory.
+
+.RETURNS
+    System.Windows.Forms.Form: The initialized main form.
+#>
 function New-MainForm {
     param(
         [Parameter(Mandatory = $true, Position = 0)]
@@ -91,6 +119,30 @@ function New-MainForm {
     return $form
 }
 
+<#
+.SYNOPSIS
+    Create a navigation controller for managing views and button events.
+
+.DESCRIPTION
+    Provides methods to load views into a TableLayoutPanel, dispose previous views when appropriate,
+    and attach click events to sidebar navigation buttons. Supports dynamic loading of PS1 view scripts.
+
+.PARAMETERS
+    ContentPanel
+        TableLayoutPanel where views will be loaded. Mandatory.
+
+    Buttons
+        Hashtable of sidebar buttons keyed by view names. Mandatory.
+
+    ViewsPath
+        Path to the folder containing view scripts. Mandatory.
+
+    Provider
+        Database provider object passed to views. Mandatory.
+
+.RETURNS
+    PSCustomObject: Navigation controller with LoadView and AttachEvents methods.
+#>
 function New-NavigationController {
     param(
         [Parameter(Mandatory = $true)]
@@ -167,6 +219,21 @@ function New-NavigationController {
     return $controller
 }
 
+<#
+.SYNOPSIS
+    Start the DBLite GUI.
+
+.DESCRIPTION
+    Initializes the main form for the specified database provider and displays it as a modal dialog.
+    Internally calls New-MainForm and shows the form.
+
+.PARAMETERS
+    Provider
+        Database provider object to associate with the GUI. Mandatory.
+
+.EXAMPLE
+    Start-DBLiteGUI -Provider $sqlProvider
+#>
 function Start-DBLiteGUI {
     param(
         [Parameter(Mandatory = $true, Position = 0)]
