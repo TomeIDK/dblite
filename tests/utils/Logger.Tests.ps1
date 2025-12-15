@@ -92,3 +92,93 @@ Describe "Initialize-LogFile" {
         Test-Path $oldFile | Should -BeFalse
     }
 }
+
+Describe "Write-QueryLog" {
+
+    InModuleScope Logger {
+        BeforeEach {
+            Mock Initialize-QueryHistoryFile { Join-Path $TestDrive 'queryhistory.json' }
+            Mock Write-DBLiteLog {}
+            $path = Join-Path $TestDrive 'queryhistory.json'
+        }
+
+        Context "When history file does not exist" {
+            It "creates new history file with one entry" {
+                Test-Path $path | Should -BeFalse
+                Write-QueryLog -Database 'TestDb' -QueryText "SELECT 1"
+
+                $content = Get-Content $path -Raw | ConvertFrom-Json
+                $content.Count | Should -Be 1
+                $content[0].Database | Should -Be 'TestDb'
+            }
+        }
+
+        Context "When history file is empty" {
+            It "initializes history when file is empty" {
+
+                "" | Set-Content $path
+                Test-Path $path | Should -BeTrue
+
+                Write-QueryLog -Database 'TestDb' -QueryText 'SELECT 1'
+
+                (Get-Content $path -Raw | ConvertFrom-Json).Count | Should -Be 1
+            }
+        }
+
+        Context "When history file has existing entries" {
+            It "appends new entry to existing query history" {
+                @(
+                    @{ Database = "OldDb"; QueryText = "SELECT 0" }
+                ) | ConvertTo-Json | Set-Content $path
+
+                Write-QueryLog -Database "NewDb" -QueryText "SELECT 1"
+
+                $content = Get-Content $path -Raw | ConvertFrom-Json
+                $content.Count | Should -Be 2
+            }
+        }
+    }
+}
+
+Describe "Initialize-QueryHistoryFile" {
+    InModuleScope Logger {
+        BeforeEach {
+            Mock Write-DBLiteLog {}
+            $path = Join-Path $TestDrive 'queryhistory.json'
+        }
+
+        Context "When file does not exist" {
+            It " creates query history file with empty object" {
+                Test-Path $path | Should -BeFalse
+
+                Initialize-QueryHistoryFile -BasePath $path | Should -Be $path
+
+                Test-Path $path | Should -BeTrue
+                Get-Content $path -Raw | Should -Be "{}"
+            }
+        }
+
+        Context "When file already exists" {
+            It "does not overwrite existing file" {
+                '{"existing":true}' | Set-Content $path
+                Initialize-QueryHistoryFile -BasePath $path | Should -Be $path
+
+                (Get-Content $path -Raw).Trim() | Should -Be '{"existing":true}'
+            }
+        }
+
+        Context "When file creation fails" {
+            It "logs error and does not throw" {
+                Mock New-Item { throw "disk full" }
+
+                { Initialize-QueryHistoryFile -BasePath $path } | Should -Not -Throw
+
+                Assert-MockCalled Write-DBLiteLog -ParameterFilter {
+                    $Level -eq "Error"
+                } -Times 1
+            }
+        }
+    }
+
+}
+
