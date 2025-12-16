@@ -68,7 +68,7 @@ function Save-SavedQuery {
         [string] $FilePath = (Join-Path $PSScriptRoot "..\..\..\config\savedqueries.json")
     )
 
-    $savedQueries = Get-SavedQueries
+    $savedQueries = Get-SavedQueries -FilePath $FilePath
     $savedQueries.$Name = $Sql
     $savedQueries | ConvertTo-Json -Depth 1 | Set-Content -Path $FilePath
     Write-DBLiteLog -Level "Info" -Message "Saved query: $Name"
@@ -97,7 +97,7 @@ function Remove-SavedQuery {
         [string] $FilePath = (Join-Path $PSScriptRoot "..\..\..\config\savedqueries.json")
     )
 
-    $savedQueries = Get-SavedQueries
+    $savedQueries = Get-SavedQueries -FilePath $FilePath
     if ($savedQueries.ContainsKey($Name)) {
         $savedQueries.Remove($Name)
         $savedQueries | ConvertTo-Json -Depth 1 | Set-Content -Path $FilePath
