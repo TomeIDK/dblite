@@ -1,8 +1,3 @@
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
-$ViewsPath = Join-Path $PSScriptRoot "\views"
-
 <#
 .SYNOPSIS
     Main GUI form and navigation controller for DBLite.
@@ -37,6 +32,11 @@ function New-MainForm {
         [Parameter(Mandatory = $true, Position = 0)]
         $Provider
     )
+
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+
+    $ViewsPath = Join-Path $PSScriptRoot "\views"
 
     $form = New-Object System.Windows.Forms.Form
     $form.Text = "DBLite | $($Provider.Name)"
@@ -177,11 +177,12 @@ function New-NavigationController {
             $this.CurrentView.Dispose()
         }
 
-        # Check if view exists
-        $file = Join-Path $this.ViewsPath "$($ViewName -replace ' ', '').ps1"
+        # Convert view name to function name
+        $funcName = "New-$($ViewName -replace ' ', '')"
 
-        if (Test-Path $file) {
-            $view = & $file -Provider $Provider
+        # Call the function to get the view object
+        if (Get-Command $funcName -ErrorAction SilentlyContinue) {
+            $view = & $funcName -Provider $Provider
         }
         else {
             $view = New-Object System.Windows.Forms.Label
@@ -190,6 +191,7 @@ function New-NavigationController {
             $view.AutoSize = $true
             $view.Location = New-Object System.Drawing.Point(20, 20)
         }
+
 
         if ($ViewName -ne "Query History") {
             $this.ContentPanel.Controls.Add($view, 0, 0)

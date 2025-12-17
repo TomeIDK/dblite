@@ -1,5 +1,4 @@
 BeforeAll {
-    Import-Module "$PSScriptRoot\..\..\modules\utils\AliasUtils\AliasUtils.psm1" -Force
 }
 
 Describe "Resolve-ConnectionString" {

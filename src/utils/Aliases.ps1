@@ -1,5 +1,3 @@
-Import-Module "$PSScriptRoot\..\Logger\Logger.psm1" -Force
-
 <#
 .SYNOPSIS
     Read the DBLite alias file and return aliases as a hashtable.
@@ -13,7 +11,7 @@ Import-Module "$PSScriptRoot\..\Logger\Logger.psm1" -Force
 #>
 function Get-DBLiteAliases {
     param(
-        [string] $AliasFileLocation = "$PSScriptRoot\..\..\..\config\aliases.json"
+        [string] $AliasFileLocation = "$PSScriptRoot\..\..\config\aliases.json"
     )
 
     $aliasFile = $AliasFileLocation
@@ -65,7 +63,7 @@ function Resolve-ConnectionString {
     # Get aliases and resolve
     $aliases = Get-DBLiteAliases
     if ($aliases.ContainsKey($InputString)) {
-        Write-DBLiteLog -Level "Info" -Message "Resolved alias '$InputString' to connection string $($aliases[$InputString])."
+        Write-DBLiteLog -Level "Info" -Message "Resolved alias '$InputString'."
         return $aliases[$InputString]
     }
     else {
@@ -73,5 +71,3 @@ function Resolve-ConnectionString {
         return $InputString
     }
 }
-
-Export-ModuleMember -Function Resolve-ConnectionString, Get-DBLiteAliases

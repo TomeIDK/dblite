@@ -3,7 +3,7 @@
     Write a log entry to the DBLite log file.
 
 .DESCRIPTION
-    Writes a timestamped, leveled entry to today's DBLite log file. Also forwards formatted messages to the host or GUI as appropriate.
+    Writes a timestamped, leveled entry to today's DBLite log file.
 
 .PARAMETERS
     Level
@@ -35,8 +35,8 @@ function Write-DBLiteLog {
     switch ($Level) {
         "Error" { Write-Error $formattedEntry }
         "Warning" { Write-Warning $formattedEntry }
-        "Info" { Write-Host $formattedEntry }
-        Default { Write-Debug $formattedEntry }
+        "Info" { Write-Verbose $formattedEntry }
+        Default { Write-Verbose $formattedEntry }
     }
 }
 
@@ -45,7 +45,7 @@ function Write-DBLiteLog {
     Ensure the DBLite logs folder and today's log file exist.
 
 .DESCRIPTION
-    Creates the logs directory if missing, creates today's logfile (dbliteDDMMYYYY.log),
+    Creates the logs directory if missing, creates today's logfile (dbliteyyyy-MM-dd.log),
     and removes log files older than 30 days.
 
 .PARAMETERS
@@ -57,15 +57,15 @@ function Write-DBLiteLog {
 #>
 function Initialize-LogFile {
     param(
-        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\..\logs")
+        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\logs")
     )
 
     $logFolder = $BasePath
     if (-not (Test-Path $logFolder)) { New-Item -Path $logFolder -ItemType Directory | Out-Null }
 
     # Construct logfile path and create file if it doesn't exist
-    $today = Get-Date -Format "ddMMyyyy"
-    $logFile = Join-Path $logFolder "dblite$today.log"
+    $today = Get-Date -Format "yyyy-MM-dd"
+    $logFile = Join-Path $logFolder "dblite-$today.log"
 
     if (-not (Test-Path $logFile)) { New-Item -Path $logFile -ItemType File | Out-Null }
 
@@ -115,7 +115,7 @@ function Format-LogEntry {
         [string] $Message
     )
 
-    return "[$($Level.ToUpper())] $($Timestamp.ToString("yyyy-MM-dd HH:mm:ss")): $Message"
+    return "$($Timestamp.ToString("yyyy-MM-dd HH:mm:ss")) [$($Level.ToUpper())]: $Message"
 }
 
 <#
@@ -171,12 +171,14 @@ function Write-QueryLog {
         # Return an empty array if the file does not exist. Otherwise retrieve the contents
         if (-not (Test-Path $queryHistoryFile)) {
             $queryHistory = @()
-        } else {
+        }
+        else {
             $raw = Get-Content $queryHistoryFile -Raw
 
             if ([string]::IsNullOrWhiteSpace($raw) -or $raw.Trim() -eq '{}') {
                 $queryHistory = @()
-            } else {
+            }
+            else {
                 $queryHistory = $raw | ConvertFrom-Json
                 if ($queryHistory -isnot [System.Collections.IEnumerable]) {
                     $queryHistory = @($queryHistory)
@@ -186,11 +188,11 @@ function Write-QueryLog {
 
         # Create an object with given parameters and add it to the json
         $entry = [PSCustomObject]@{
-            Database = $Database
-            QueryText = $QueryText
+            Database        = $Database
+            QueryText       = $QueryText
             ExecutionStatus = $ExecutionStatus
-            AffectedRows = $AffectedRows
-            Timestamp = $Timestamp
+            AffectedRows    = $AffectedRows
+            Timestamp       = $Timestamp
         }
 
         $queryHistory += $entry
@@ -223,7 +225,7 @@ function Write-QueryLog {
 function Initialize-QueryHistoryFile {
     param(
         [Parameter(Mandatory = $false)]
-        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\..\logs\queryhistory.json")
+        [string] $BasePath = (Join-Path $PSScriptRoot "..\..\logs\queryhistory.json")
     )
 
     # Create the file if it doesn't exist
@@ -239,5 +241,3 @@ function Initialize-QueryHistoryFile {
 
     return $BasePath
 }
-
-Export-ModuleMember -Function Write-DBLiteLog, Initialize-LogFile, Format-LogEntry, Write-QueryLog, Initialize-QueryHistoryFile

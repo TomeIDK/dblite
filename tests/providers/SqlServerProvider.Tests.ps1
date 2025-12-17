@@ -1,7 +1,4 @@
 BeforeAll {
-    Import-Module "$PSScriptRoot\..\..\modules\core\DatabaseProviderBase\DatabaseProviderBase.psm1" -Force
-    Import-Module "$PSScriptRoot\..\..\modules\core\IDatabaseProvider\IDatabaseProvider.psm1" -Force
-    Import-Module "$PSScriptRoot\..\..\modules\providers\SqlServerProvider\SqlServerProvider.psm1" -Force
 }
 
 Describe "New-SqlServerProvider" {

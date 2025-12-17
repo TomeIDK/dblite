@@ -42,13 +42,7 @@ GetLatestBackup
 
 .RETURNS
 A PSCustomObject representing a database provider with properties and unimplemented methods.
-
-.EXAMPLE
-$provider = New-IDatabaseProvider
-$provider.Name = "SqlServer"
-$provider.Configure()  # Will throw an error until implemented
 #>
-Import-Module "$PSScriptRoot\..\..\utils\Logger\Logger.psm1" -Force
 
 function New-IDatabaseProvider {
     $provider = [PSCustomObject]@{
@@ -100,5 +94,3 @@ function New-IDatabaseProvider {
 
     return $provider
 }
-
-Export-ModuleMember -Function New-IDatabaseProvider

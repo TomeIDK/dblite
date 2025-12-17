@@ -22,5 +22,3 @@ function New-DatabaseProviderBase {
 
     return $provider
 }
-
-Export-ModuleMember -Function New-DatabaseProviderBase

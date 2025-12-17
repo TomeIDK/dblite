@@ -141,5 +141,3 @@ function Add-ListBoxSavedQueries {
     $ListBox.Height = ($ListBox.Items.Count * 20)
 
 }
-
-Export-ModuleMember -Function Get-SavedQueries, Save-SavedQuery, Remove-SavedQuery, Add-ListBoxSavedQueries

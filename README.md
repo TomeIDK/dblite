@@ -17,3 +17,5 @@ A lightweight Powershell database inspector with WinForms.
 - [x] Error handling with informative messages
 - [x] Pester tests
 - [ ] Documentation
+
+Wat, waarvoor, hoe installeren, configureren, hoe te gebruiken, sources, code references, psd1 files, README heel belangrijk, demo met large-scale complex data

@@ -1,5 +1,3 @@
-Import-Module "$PSScriptRoot\..\..\..\modules\utils\Logger\Logger.psm1" -Force
-
 <#
 .SYNOPSIS
 Retrieves the history of executed queries for a specific database.
@@ -32,5 +30,3 @@ function Get-QueryHistory {
 
     return $results
 }
-
-Export-ModuleMember -Function Get-QueryHistory

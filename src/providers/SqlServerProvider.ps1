@@ -32,16 +32,7 @@ GetLatestBackup
 
 .RETURNS
 A PSCustomObject representing a SQL Server database provider with fully implemented methods for connection, query execution, table listing, and backup management.
-
-.EXAMPLE
-$provider = New-SqlServerProvider
-$provider.Connect("Server=.;Database=TestDb;Integrated Security=True")
-$tables = $provider.GetTables()
-$provider.RunQuery("SELECT TOP 10 * FROM Users")
-$provider.NewBackup("C:\Backups\TestDb.bak", "Full", $WithCompression)
-$provider.Disconnect()
 #>
-Import-Module "$PSScriptRoot\..\..\utils\Logger\Logger.psm1" -Force
 
 function New-SqlServerProvider {
     $provider = New-DatabaseProviderBase -Name "SQL Server"
@@ -287,5 +278,3 @@ ORDER BY bs.backup_finish_date DESC;
 
     return $provider
 }
-
-Export-ModuleMember -Function New-SqlServerProvider

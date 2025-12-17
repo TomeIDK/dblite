@@ -1,14 +1,14 @@
 BeforeAll {
-    Import-Module "$PSScriptRoot\..\..\modules\utils\Logger\Logger.psm1" -Force
+    Import-Module "$PSScriptRoot\..\..\DBLite\DBLite.psm1" -Force
 }
 
 Describe "Write-DBLiteLog" {
 
-    InModuleScope Logger {
+    InModuleScope DBLite {
 
         BeforeEach {
-            Mock Initialize-LogFile { "TestDrive:\logs\dblite$(Get-Date -Format 'ddMMyyyy').log" }
-            Mock Format-LogEntry { "[INFO] 2024-01-01 12:00:00: This is a mocked log message." }
+            Mock Initialize-LogFile { "TestDrive:\logs\dblite$(Get-Date -Format 'yyyy-MM-dd').log" }
+            Mock Format-LogEntry { "2024-01-01 12:00:00 [INFO]: This is a mocked log message." }
             Mock Add-Content { }
         }
 
@@ -26,8 +26,8 @@ Describe "Write-DBLiteLog" {
             }
 
             Assert-MockCalled -CommandName Add-Content -Times 1 -ParameterFilter {
-                $Path -eq "TestDrive:\logs\dblite$(Get-Date -Format 'ddMMyyyy').log" -and
-                $Value -eq "[INFO] 2024-01-01 12:00:00: This is a mocked log message."
+                $Path -eq "TestDrive:\logs\dblite$(Get-Date -Format 'yyyy-MM-dd').log" -and
+                $Value -eq "2024-01-01 12:00:00 [INFO]: This is a mocked log message."
             }
         }
     }
@@ -42,7 +42,7 @@ Describe "Format-LogEntry" {
 
         $result = Format-LogEntry -Level $logLevel -Timestamp $logTimestamp -Message $logMessage
 
-        $expected = "[INFO] 2024-01-01 12:00:00: This is a test log message."
+        $expected = "2024-01-01 12:00:00 [INFO]: This is a test log message."
         $result | Should -Be $expected
     }
 }
@@ -56,7 +56,7 @@ Describe "Initialize-LogFile" {
 
         Test-Path $basePath | Should -BeTrue
 
-        $expectedFile = Join-Path $basePath "dblite$(Get-Date -Format 'ddMMyyyy').log"
+        $expectedFile = Join-Path $basePath "dblite$(Get-Date -Format 'yyyy-MM-dd').log"
         $result | Should -Be $expectedFile
         Test-Path $expectedFile | Should -BeTrue
     }
@@ -65,7 +65,7 @@ Describe "Initialize-LogFile" {
         $basePath = "TestDrive:\logs"
         New-Item -ItemType Directory -Path $basePath -Force | Out-Null
 
-        $file = Join-Path $basePath "dblite$(Get-Date -Format 'ddMMyyyy').log"
+        $file = Join-Path $basePath "dblite$(Get-Date -Format 'yyyy-MM-dd').log"
         New-Item -ItemType File -Path $file -Force | Out-Null
 
         $beforeWriteTime = (Get-Item $file).LastWriteTime
@@ -95,7 +95,7 @@ Describe "Initialize-LogFile" {
 
 Describe "Write-QueryLog" {
 
-    InModuleScope Logger {
+    InModuleScope DBLite {
         BeforeEach {
             Mock Initialize-QueryHistoryFile { Join-Path $TestDrive 'queryhistory.json' }
             Mock Write-DBLiteLog {}
@@ -141,7 +141,7 @@ Describe "Write-QueryLog" {
 }
 
 Describe "Initialize-QueryHistoryFile" {
-    InModuleScope Logger {
+    InModuleScope DBLite {
         BeforeEach {
             Mock Write-DBLiteLog {}
             $path = Join-Path $TestDrive 'queryhistory.json'
