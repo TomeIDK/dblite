@@ -105,6 +105,11 @@ function New-SqlServerProvider {
                 Error = $errorMessage
             }
         }
+        finally {
+            if ($reader) {
+                $reader.Close()
+            }
+        }
 
     } -Force
 
@@ -114,23 +119,110 @@ function New-SqlServerProvider {
             throw "Not connected to the database."
         }
 
-        $cmd = $this.Connection.CreateCommand()
-        $cmd.CommandText = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'"
+        $query = @"
+SELECT
+    t.name AS TableName,
+    c.name AS ColumnName,
+    ty.name AS DataType,
 
-        $reader = $cmd.ExecuteReader()
-        Write-DBLiteLog -Level "Info" -Message "Retrieved table list from database."
-        Write-QueryLog -Database $this.Name -QueryText $Query -ExecutionStatus "Success"
+    CASE WHEN pk.column_id IS NOT NULL THEN 1 ELSE 0 END AS IsPrimaryKey,
+    CASE WHEN fk.parent_column_id IS NOT NULL THEN 1 ELSE 0 END AS IsForeignKey,
+    CASE WHEN uq.column_id IS NOT NULL THEN 1 ELSE 0 END AS IsUnique,
+    CASE WHEN ix.column_id IS NOT NULL THEN 1 ELSE 0 END AS IsIndexed
 
-        $tables = @()
+FROM sys.tables t
+JOIN sys.columns c
+    ON t.object_id = c.object_id
+JOIN sys.types ty
+    ON c.user_type_id = ty.user_type_id
 
-        while ($reader.Read()) {
-            $tables += $reader["TABLE_NAME"]
+LEFT JOIN (
+    SELECT ic.object_id, ic.column_id
+    FROM sys.indexes i
+    JOIN sys.index_columns ic
+        ON i.object_id = ic.object_id
+       AND i.index_id = ic.index_id
+    WHERE i.is_primary_key = 1
+) pk
+    ON c.object_id = pk.object_id
+   AND c.column_id = pk.column_id
+
+LEFT JOIN sys.foreign_key_columns fk
+    ON c.object_id = fk.parent_object_id
+   AND c.column_id = fk.parent_column_id
+
+LEFT JOIN (
+    SELECT ic.object_id, ic.column_id
+    FROM sys.indexes i
+    JOIN sys.index_columns ic
+        ON i.object_id = ic.object_id
+       AND i.index_id = ic.index_id
+    WHERE i.is_unique = 1
+) uq
+    ON c.object_id = uq.object_id
+   AND c.column_id = uq.column_id
+
+LEFT JOIN (
+    SELECT ic.object_id, ic.column_id
+    FROM sys.indexes i
+    JOIN sys.index_columns ic
+        ON i.object_id = ic.object_id
+       AND i.index_id = ic.index_id
+    WHERE i.is_primary_key = 0
+        AND i.is_unique = 0
+) ix
+    ON c.object_id = ix.object_id
+   AND c.column_id = ix.column_id
+
+ORDER BY t.name, c.column_id;
+"@
+
+        $reader = $null
+        $tables = @{}
+
+        try {
+            $cmd = $this.Connection.CreateCommand()
+            $cmd.CommandText = $query
+
+            $reader = $cmd.ExecuteReader()
+
+
+            while ($reader.Read()) {
+                $tableName = $reader['TableName']
+
+                if (-not $tables.ContainsKey($tableName)) {
+                    $tables[$tableName] = [PSCustomObject]@{
+                        Name    = $tableName
+                        Columns = @()
+                    }
+                }
+
+                $tables[$tableName].Columns += [PSCustomObject]@{
+                    Name         = $reader['ColumnName']
+                    DataType     = $reader['DataType']
+                    IsPrimaryKey = [bool]$reader['IsPrimaryKey']
+                    IsForeignKey = [bool]$reader['IsForeignKey']
+                    IsUnique     = [bool]$reader['IsUnique']
+                    IsIndexed    = [bool]$reader['IsIndexed']
+                }
+            }
+
+            Write-DBLiteLog -Level "Info" -Message "Retrieved $($tables.Count) tables from database."
+
+            $tables.Values = $tables.Values | Sort-Object Name
+
+            return $tables.Values
         }
-
-        $reader.Close()
-
-        return $tables
-    } -Force
+        catch {
+            Write-DBLiteLog -Level "Error" -Message "Failed to fetch tables: $($_.Exception.Message)"
+            throw
+        }
+        finally {
+            if ($reader) {
+                $reader.Close()
+            }
+        }
+    }-Force
 
     $provider | Add-Member -MemberType ScriptMethod -Name NewBackup -Value {
         param(
@@ -223,6 +315,11 @@ ORDER BY bs.backup_finish_date DESC;
 
             return [PSCustomObject]@{
                 Error = $errorMessage
+            }
+        }
+        finally {
+            if ($reader) {
+                $reader.Close()
             }
         }
 
