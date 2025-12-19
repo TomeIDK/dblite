@@ -92,5 +92,10 @@ function New-IDatabaseProvider {
         throw "GetLatestBackup() not implemented yet"
     }
 
+    $provider | Add-Member -MemberType ScriptMethod -Name GetTableSchema -Value {
+        Write-DBLiteLog -Level "Error" -Message "GetTableSchema() was called on a provider that has no implementation."
+        throw "GetTableSchema() not implemented yet"
+    }
+
     return $provider
 }

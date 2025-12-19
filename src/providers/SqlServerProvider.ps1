@@ -373,5 +373,113 @@ ORDER BY bs.backup_finish_date DESC;
 
     } -Force
 
+    $provider | Add-Member -MemberType ScriptMethod -Name GetTableSchema -Value {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string] $TableName
+        )
+
+        if (-not $this.IsConnected) {
+            Write-DBLiteLog -Level "Error" -Message "Attempted to get table schema while not connected to the database."
+            throw "Not connected to the database."
+        }
+
+        $query = @"
+SELECT
+    s.name  AS SchemaName,
+    t.name  AS TableName,
+    c.name  AS ColumnName,
+    ty.name AS DataType,
+    c.is_nullable AS IsNullable,
+
+    CASE WHEN pk.column_id IS NOT NULL THEN 1 ELSE 0 END AS IsPrimaryKey,
+    CASE WHEN fk.parent_column_id IS NOT NULL THEN 1 ELSE 0 END AS IsForeignKey,
+    CASE WHEN uq.column_id IS NOT NULL THEN 1 ELSE 0 END AS IsUnique
+FROM sys.tables t
+JOIN sys.schemas s ON t.schema_id = s.schema_id
+JOIN sys.columns c ON t.object_id = c.object_id
+JOIN sys.types ty ON c.user_type_id = ty.user_type_id
+
+LEFT JOIN (
+    SELECT ic.object_id, ic.column_id
+    FROM sys.indexes i
+    JOIN sys.index_columns ic
+        ON i.object_id = ic.object_id
+       AND i.index_id = ic.index_id
+    WHERE i.is_primary_key = 1
+) pk ON pk.object_id = c.object_id AND pk.column_id = c.column_id
+
+LEFT JOIN (
+    SELECT parent_object_id, parent_column_id
+    FROM sys.foreign_key_columns
+) fk ON fk.parent_object_id = c.object_id AND fk.parent_column_id = c.column_id
+
+LEFT JOIN (
+    SELECT ic.object_id, ic.column_id
+    FROM sys.indexes i
+    JOIN sys.index_columns ic
+        ON i.object_id = ic.object_id
+       AND i.index_id = ic.index_id
+    WHERE i.is_unique = 1 AND i.is_primary_key = 0
+) uq ON uq.object_id = c.object_id AND uq.column_id = c.column_id
+
+WHERE t.name = '$TableName'
+ORDER BY c.column_id;
+
+"@
+        $cmd = $this.Connection.CreateCommand()
+        $cmd.CommandText = $query
+        $reader = $null
+
+        try {
+            $reader = $cmd.ExecuteReader()
+            $results = @()
+
+            while ($reader.Read()) {
+                $row = @{}
+                for ($i = 0; $i -lt $reader.FieldCount; $i++) {
+                    $row[$reader.GetName($i)] = $reader.GetValue($i)
+                }
+                $results += [PSCustomObject]$row
+            }
+
+            if (-not $results) {
+                Write-DBLiteLog -Level "Warning" -Message "No schema found for table $TableName."
+                return $null
+            }
+
+            $first = $results[0]
+
+            Write-DBLiteLog -Level "Info" -Message "Table schema for $TableName retrieved successfully."
+
+            return [PSCustomObject]@{
+                TableName = $first.TableName
+                Schema    = $first.SchemaName
+                Columns   = foreach ($row in $results) {
+                    [PSCustomObject]@{
+                        Name         = $row.ColumnName
+                        DataType     = $row.DataType
+                        IsNullable   = [bool]$row.IsNullable
+                        IsPrimaryKey = [bool]$row.IsPrimaryKey
+                        IsForeignKey = [bool]$row.IsForeignKey
+                        IsUnique     = [bool]$row.IsUnique
+                    }
+                }
+            }
+        }
+        catch {
+            Write-DBLiteLog -Level "Error" -Message "Failed to retrieve table schema for $($TableName): $($_.Exception.Message)"
+            throw
+        }
+        finally {
+            if ($reader) {
+                $reader.Close()
+            }
+            if ($cmd) {
+                $cmd.Dispose()
+            }
+        }
+    } -Force
+
     return $provider
 }

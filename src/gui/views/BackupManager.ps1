@@ -185,7 +185,7 @@ function New-BackupManager {
     # Open a modal to confirm creating a backup then save it
     $btnCreateBackup.Add_Click({
             if (-not $pathTextBox.Text) {
-                [System.Windows.Forms.MessageBox]::Show('Please select a backup location.')
+                [System.Windows.Forms.MessageBox]::Show('Please select a backup location.', 'No location selected', 'OK', 'Warning')
                 return
             }
             $modal = New-Object System.Windows.Forms.Form

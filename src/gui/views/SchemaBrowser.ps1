@@ -58,23 +58,6 @@ function New-SchemaBrowser {
 
 
     # =====================
-    # Buttons Container
-    # =====================
-    $btnPanel = New-Object System.Windows.Forms.FlowLayoutPanel
-    $btnPanel.FlowDirection = "RightToLeft"
-    $btnPanel.Dock = "Fill"
-    $btnPanel.WrapContents = $false
-    $btnPanel.AutoSize = $true
-
-
-    # =====================
-    # Button Panel Buttons
-    # =====================
-    $btnExportCsv = New-StyledButton -Name "Export CSV"
-    $btnExportJson = New-StyledButton -Name "Export JSON"
-
-
-    # =====================
     # Card Flow Layout Panel
     # =====================
     $cardsPanel = New-Object System.Windows.Forms.FlowLayoutPanel
@@ -94,6 +77,103 @@ function New-SchemaBrowser {
         $cardsPanel.Controls.Add($card)
     }
 
+
+    # =====================
+    # Export All Checkbox
+    # =====================
+    $exportAllCheckbox = New-Object System.Windows.Forms.CheckBox
+    $exportAllCheckbox.Text = "Export All"
+    $exportAllCheckbox.AutoSize = $true
+    $exportAllCheckbox.Dock = "Right"
+    $exportAllCheckbox.Tag = $cardsPanel
+
+    $exportAllCheckbox.Add_CheckedChanged({
+        $cardsPanelCopy = $this.Tag
+        $checked = $this.Checked
+
+        foreach ($card in $cardsPanelCopy.Controls) {
+            $chk = $card.Tag.Export
+            if ($chk) {
+                $chk.Invoke({ $chk.Checked = $checked })
+            }
+        }
+    })
+
+    # =====================
+    # Buttons Container
+    # =====================
+    $btnPanel = New-Object System.Windows.Forms.FlowLayoutPanel
+    $btnPanel.FlowDirection = "RightToLeft"
+    $btnPanel.Dock = "Fill"
+    $btnPanel.WrapContents = $false
+    $btnPanel.AutoSize = $true
+
+
+    # =====================
+    # Button Panel Buttons
+    # =====================
+    $btnExportCsv = New-StyledButton -Name "Export CSV"
+    $btnExportCsv.Tag = $cardsPanel
+    $btnExportCsv.Add_Click({
+        $cardsPanelCopy = $this.Tag
+            $tables = Get-SelectedTablesToExport -CardsPanel $cardsPanelCopy
+            if (-not $tables) {
+                [System.Windows.Forms.MessageBox]::Show('Please select at least one table to export.', 'No tables selected', 'OK', 'Warning')
+                return
+            }
+
+
+            $dialog = New-Object System.Windows.Forms.SaveFileDialog
+            $dialog.RestoreDirectory = $true
+            $dialog.FileName = "$($Provider.Name.ToLower())_schema.csv"
+            $dialog.Filter = 'JSON Files (*.csv)|*.csv'
+
+            if ($dialog.ShowDialog() -eq 'OK') {
+                $filePath = $dialog.FileName
+
+                if (-not $filePath.EndsWith('.csv')) {
+                    $filePath += '.csv'
+                }
+
+                Export-DbLiteTablesCsv -Provider $Provider -Tables $tables -FilePath $filePath
+
+                [System.Windows.Forms.MessageBox]::Show("Export completed: $filePath", "Export Success", 'OK', 'Information')
+            }
+
+
+
+        })
+
+    $btnExportJson = New-StyledButton -Name "Export JSON"
+    $btnExportJson.Tag = $cardsPanel
+    $btnExportJson.Add_Click({
+            $cardsPanelCopy = $this.Tag
+            $tables = Get-SelectedTablesToExport -CardsPanel $cardsPanelCopy
+
+            if (-not $tables) {
+                [System.Windows.Forms.MessageBox]::Show('Please select at least one table to export.', 'No tables selected', 'OK', 'Warning')
+                return
+            }
+
+            $dialog = New-Object System.Windows.Forms.SaveFileDialog
+            $dialog.RestoreDirectory = $true
+            $dialog.FileName = "$($Provider.Name.ToLower())_schema.json"
+            $dialog.Filter = 'JSON Files (*.json)|*.json'
+
+            if ($dialog.ShowDialog() -eq 'OK') {
+                $filePath = $dialog.FileName
+
+                if (-not $filePath.EndsWith('.json')) {
+                    $filePath += '.json'
+                }
+
+                Export-DbLiteTablesJson -Provider $Provider -Tables $tables -FilePath $filePath
+
+                [System.Windows.Forms.MessageBox]::Show("Export completed: $filePath", "Export Success", 'OK', 'Information')
+            }
+        })
+
+
     # =====================
     # Layout Builder
     # =====================
@@ -104,6 +184,7 @@ function New-SchemaBrowser {
 
     $btnPanel.Controls.Add($btnExportCsv)
     $btnPanel.Controls.Add($btnExportJson)
+    $btnPanel.Controls.Add($exportAllCheckbox)
 
     $topBar.Controls.Add($title)
     $topBar.Controls.Add($lastBackupLabel)
@@ -269,8 +350,8 @@ function New-TableSchemaCard {
 
     # Expose footer state
     $card.Tag = @{
-        Export  = $exportCheckbox
-        ViewBtn = $viewBtn
+        TableName = $TableName
+        Export    = $exportCheckbox
     }
 
     return $card

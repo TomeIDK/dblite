@@ -22,3 +22,4 @@ Wat, waarvoor, hoe installeren, configureren, hoe te gebruiken, sources, code re
 
 Sources:
 https://learn.microsoft.com/en-us/powershell/scripting/developer/module/how-to-write-a-powershell-module-manifest?view=powershell-7.5
+https://ss64.com/ps/messagebox.html
