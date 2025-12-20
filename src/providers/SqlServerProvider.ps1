@@ -342,6 +342,8 @@ ORDER BY bs.backup_finish_date DESC;
         }
         catch {
             Write-DBLiteLog -Level "Error" -Message "Failed to retrieve SQL Server edition: $($_.Exception.Message)"
+            Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Failure"
+            throw
         }
 
     } -Force
@@ -368,6 +370,8 @@ ORDER BY bs.backup_finish_date DESC;
         }
         catch {
             Write-DBLiteLog -Level "Error" -Message "Failed to retrieve latest backup: $($_.Exception.Message)"
+            Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Failure"
+            throw
         }
 
 
@@ -469,6 +473,7 @@ ORDER BY c.column_id;
         }
         catch {
             Write-DBLiteLog -Level "Error" -Message "Failed to retrieve table schema for $($TableName): $($_.Exception.Message)"
+            Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Failure"
             throw
         }
         finally {
@@ -477,6 +482,117 @@ ORDER BY c.column_id;
             }
             if ($cmd) {
                 $cmd.Dispose()
+            }
+        }
+    } -Force
+
+
+    $provider | Add-Member -MemberType ScriptMethod -Name GetIndexes -Value {
+        if (-not $this.IsConnected) {
+            Write-DBLiteLog -Level "Error" -Message "Attempted to get indexes while not connected to the database."
+            throw "Not connected to the database."
+        }
+
+        $query = @"
+WITH IndexSizes AS (
+    SELECT
+        ps.object_id,
+        ps.index_id,
+        SUM(ps.used_page_count) * 8 AS SizeKB
+    FROM sys.dm_db_partition_stats ps
+    GROUP BY ps.object_id, ps.index_id
+),
+IndexUsage AS (
+    SELECT
+        ius.object_id,
+        ius.index_id,
+        (
+            SELECT MAX(v)
+            FROM (VALUES
+                (ius.last_user_seek),
+                (ius.last_user_scan),
+                (ius.last_user_lookup)
+            ) AS value(v)
+        ) AS LastUsedSinceRestart
+    FROM sys.dm_db_index_usage_stats ius
+    WHERE ius.database_id = DB_ID()
+)
+SELECT
+    QUOTENAME(s.name) + '.' + QUOTENAME(t.name) AS TableName,
+    i.name AS IndexName,
+    STRING_AGG(
+        c.name + CASE ic.is_descending_key WHEN 1 THEN ' DESC' ELSE ' ASC' END,
+        ', '
+    ) WITHIN GROUP (ORDER BY ic.key_ordinal) AS IndexedColumns,
+    CASE
+        WHEN i.is_primary_key = 1 THEN 'Primary Key'
+        WHEN i.is_unique = 1 AND i.type_desc LIKE '%CLUSTERED%' THEN 'Unique Clustered'
+        WHEN i.is_unique = 1 THEN 'Unique Nonclustered'
+        ELSE i.type_desc
+    END AS IndexType,
+    ISNULL(sz.SizeKB, 0) AS SizeKB,
+    us.LastUsedSinceRestart
+FROM sys.indexes i
+JOIN sys.tables t
+    ON i.object_id = t.object_id
+JOIN sys.schemas s
+    ON t.schema_id = s.schema_id
+JOIN sys.index_columns ic
+    ON i.object_id = ic.object_id
+    AND i.index_id = ic.index_id
+JOIN sys.columns c
+    ON ic.object_id = c.object_id
+    AND ic.column_id = c.column_id
+LEFT JOIN IndexSizes sz
+    ON i.object_id = sz.object_id
+    AND i.index_id = sz.index_id
+LEFT JOIN IndexUsage us
+    ON i.object_id = us.object_id
+    AND i.index_id = us.index_id
+WHERE
+    i.type > 0                 -- excludes heaps
+    AND ic.is_included_column = 0
+GROUP BY
+    s.name,
+    t.name,
+    i.name,
+    i.type_desc,
+    i.is_unique,
+    i.is_primary_key,
+    sz.SizeKB,
+    us.LastUsedSinceRestart
+ORDER BY
+    TableName,
+    IndexName;
+"@
+
+        $cmd = $this.Connection.CreateCommand()
+        $cmd.CommandText = $query
+        $reader = $null
+
+        try {
+            Write-DBLiteLog -Level "Info" -Message "Retrieving indexes..."
+
+            $reader = $cmd.ExecuteReader()
+
+
+            $table = New-Object System.Data.DataTable
+            $table.Load($reader)
+
+            Write-DBLiteLog -Level "Info" -Message "Retrieved $($table.Rows.Count) indexes."
+
+            return $table
+        }
+        catch {
+            $errorMessage = $_.Exception.Message
+            Write-DBLiteLog -Level "Error" -Message "Failed to retrieve indexes: $errorMessage"
+            Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Failure"
+
+            throw
+        }
+        finally {
+            if ($reader) {
+                $reader.Close()
             }
         }
     } -Force

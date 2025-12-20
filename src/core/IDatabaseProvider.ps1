@@ -97,5 +97,10 @@ function New-IDatabaseProvider {
         throw "GetTableSchema() not implemented yet"
     }
 
+    $provider | Add-Member -MemberType ScriptMethod -Name GetIndexes -Value {
+        Write-DBLiteLog -Level "Error" -Message "GetIndexes() was called on a provider that has no implementation."
+        throw "GetIndexes() not implemented yet"
+    }
+
     return $provider
 }
