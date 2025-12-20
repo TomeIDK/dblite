@@ -80,7 +80,11 @@ function New-SqlServerProvider {
             $cmd = $this.Connection.CreateCommand()
             $cmd.CommandText = $Query
 
+            $start = Get-Date
             $reader = $cmd.ExecuteReader()
+            $end = Get-Date
+            $executionTime = ($end - $start).TotalMilliseconds
+
             Write-DBLiteLog -Level "Info" -Message "Query executed successfully."
 
             $affectedRows = $reader.RecordsAffected
@@ -88,7 +92,7 @@ function New-SqlServerProvider {
                 $affectedRows = 0
             }
 
-            Write-QueryLog -Database $this.Name -QueryText $Query -ExecutionStatus "Success" -AffectedRows $affectedRows
+            Write-QueryLog -Database $this.Name -QueryText $Query -ExecutionStatus "Success" -AffectedRows $affectedRows -ExecutionTime $executionTime
 
             $table = New-Object System.Data.DataTable
             $table.Load($reader)

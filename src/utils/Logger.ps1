@@ -160,6 +160,9 @@ function Write-QueryLog {
         [Parameter(Mandatory = $false, Position = 3)]
         [int] $AffectedRows = 0,
 
+        [Parameter(Mandatory = $false, Position = 4)]
+        [int] $ExecutionTime = 0,
+
         [Parameter(Mandatory = $false)]
         [DateTime] $Timestamp = (Get-Date)
 
@@ -192,6 +195,7 @@ function Write-QueryLog {
             QueryText       = $QueryText
             ExecutionStatus = $ExecutionStatus
             AffectedRows    = $AffectedRows
+            ExecutionTime   = $ExecutionTime
             Timestamp       = $Timestamp
         }
 
@@ -200,7 +204,7 @@ function Write-QueryLog {
         $queryHistory | ConvertTo-Json | Set-Content $queryHistoryFile -Encoding UTF8
 
 
-        Write-DBLiteLog -Level "Info" -Message "Logged query execution: '$QueryText' Status: $ExecutionStatus AffectedRows: $AffectedRows"
+        Write-DBLiteLog -Level "Info" -Message "Logged query execution: '$QueryText' Status: $ExecutionStatus AffectedRows: $AffectedRows ExecutionTime: $($ExecutionTime)ms"
     }
     catch {
         Write-DBLiteLog -Level "Error" -Message "Failed to log query execution: $($_.Exception.Message)"
