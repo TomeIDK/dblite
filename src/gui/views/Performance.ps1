@@ -63,7 +63,7 @@ function New-Performance {
     $dbGroupBox.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
     $dbGroupBox.AutoSize = $true
     $dbGroupBox.AutoSizeMode = "GrowOnly"
-    $dbGroupBox.MinimumSize = New-Object System.Drawing.Size(500, 200)
+    $dbGroupBox.MinimumSize = New-Object System.Drawing.Size(500, 150)
     $dbGroupBox.Location = New-Object System.Drawing.Point(10, 10)
     $dbGroupBox.Padding = [System.Windows.Forms.Padding]::new(10)
     $dbGroupBox.Margin = [System.Windows.Forms.Padding]::new(0, 0, 0, 25)
@@ -78,12 +78,12 @@ function New-Performance {
     $dbFlowPanel.ColumnCount = 2
     $dbFlowPanel.Padding = [System.Windows.Forms.Padding]::new(10)
 
-    $querySpeedStatLabel = New-StatLabel "Avg Query Speed: -- ms"
-    $queriesPerSecondStatLabel = New-StatLabel "Queries/sec: --"
-    $connectionsStatLabel = New-StatLabel "Connections: --"
-    $cpuStatLabel = New-StatLabel "CPU Usage: -- %"
-    $memoryStatLabel = New-StatLabel "Memory Usage: -- MB"
-    $diskStatLabel = New-StatLabel "Disk Usage: -- MB"
+    $stats = $Provider.GetPerformanceStats()
+
+    $queriesPerSecondStatLabel = New-StatLabel "Queries/sec: $($stats.Load.QueriesPerSecond)"
+    $connectionsStatLabel = New-StatLabel "Connections: $($stats.Load.Connections)"
+    $cpuStatLabel = New-StatLabel "CPU Usage: $($stats.Cpu.SqlServerPercent) %"
+    $memoryStatLabel = New-StatLabel "Memory Usage: $($stats.Memory.UsedMB) MB"
 
 
     # =====================
@@ -108,9 +108,14 @@ function New-Performance {
     $dbliteFlowPanel.ColumnCount = 2
     $dbliteFlowPanel.Padding = [System.Windows.Forms.Padding]::new(10)
 
+    $queryHistoryStats = Get-QueryHistoryStats -Database $Provider.Name
 
-    $totalQueriesExecutedStatLabel = New-StatLabel "Total Queries Executed: --"
-    $avgExecutionTimeStatLabel = New-StatLabel "Avg Execution Time: -- ms"
+    $totalQueriesExecutedStatLabel = New-StatLabel "Total Queries Executed: $($queryHistoryStats.QueryCount)"
+    $avgExecutionTimeStatLabel = New-StatLabel "Avg Execution Time: $($queryHistoryStats.AverageExecutionTimeMs) ms"
+    $totalExecutionTimeStatLabel = New-StatLabel "Total Execution Time: $($queryHistoryStats.TotalExecutionTimeMs) ms"
+    $fastestQueryStatLabel = New-StatLabel "Fastest Query Time: $($queryHistoryStats.FastestQueryMs) ms"
+    $slowestQueryStatLabel = New-StatLabel "Slowest Query Time: $($queryHistoryStats.SlowestQueryMs) ms"
+    $lastExecutedQueryStatLabel = New-StatLabel "Last Query Executed: $($queryHistoryStats.LastExecutedQuery)"
 
 
     # =====================
@@ -121,19 +126,18 @@ function New-Performance {
     $viewLayout.RowCount = 4
     $viewLayout.ColumnCount = 1
 
-    # $btnPanel.Controls.Add($btnHistory)
-    # $btnPanel.Controls.Add($btnCreateBackup)
-
-    $dbFlowPanel.Controls.Add($querySpeedStatLabel, 0, 0)
-    $dbFlowPanel.Controls.Add($queriesPerSecondStatLabel, 0, 1)
-    $dbFlowPanel.Controls.Add($connectionsStatLabel, 0, 2)
+    $dbFlowPanel.Controls.Add($queriesPerSecondStatLabel, 0, 0)
+    $dbFlowPanel.Controls.Add($connectionsStatLabel, 0, 1)
     $dbFlowPanel.Controls.Add($cpuStatLabel, 1, 0)
     $dbFlowPanel.Controls.Add($memoryStatLabel, 1, 1)
-    $dbFlowPanel.Controls.Add($diskStatLabel, 1, 2)
     $dbGroupBox.Controls.Add($dbFlowPanel)
 
     $dbliteFlowPanel.Controls.Add($totalQueriesExecutedStatLabel, 0, 0)
     $dbliteFlowPanel.Controls.Add($avgExecutionTimeStatLabel, 0, 1)
+    $dbliteFlowPanel.Controls.Add($totalExecutionTimeStatLabel, 0, 2)
+    $dbliteFlowPanel.Controls.Add($fastestQueryStatLabel, 1, 0)
+    $dbliteFlowPanel.Controls.Add($slowestQueryStatLabel, 1, 1)
+    $dbliteFlowPanel.Controls.Add($lastExecutedQueryStatLabel, 1, 2)
     $dbliteGroupBox.Controls.Add($dbliteFlowPanel)
 
     $topBar.Controls.Add($title)

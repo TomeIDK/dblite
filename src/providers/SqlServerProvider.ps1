@@ -601,5 +601,145 @@ ORDER BY
         }
     } -Force
 
+
+    $provider | Add-Member -MemberType ScriptMethod -Name GetPerformanceStats -Value {
+        if (-not $this.IsConnected) {
+            Write-DBLiteLog -Level "Error" -Message "Attempted to get performance stats while not connected to the database."
+            throw "Not connected to the database."
+        }
+
+        $queriesPerSecondQuery = @"
+SELECT
+    cntr_value AS batch_requests_per_sec
+FROM sys.dm_os_performance_counters
+WHERE object_name LIKE '%SQL Statistics%'
+  AND counter_name = 'Batch Requests/sec';
+"@
+
+        $connectionsQuery = @"
+SELECT COUNT(*) AS total_connections
+FROM sys.dm_exec_connections;
+"@
+
+        $cpuUsageQuery = @"
+WITH cpu AS (
+    SELECT
+        record.value('(./Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int') AS sql_cpu,
+        record.value('(./Record/SchedulerMonitorEvent/SystemHealth/SystemIdle)[1]', 'int') AS system_idle
+    FROM (
+        SELECT CONVERT(xml, record) AS record
+        FROM sys.dm_os_ring_buffers
+        WHERE ring_buffer_type = 'RING_BUFFER_SCHEDULER_MONITOR'
+          AND record LIKE '%<SystemHealth>%'
+    ) AS rb
+)
+SELECT TOP 1
+    sql_cpu AS sql_cpu_percent,
+    100 - system_idle - sql_cpu AS other_process_cpu_percent
+FROM cpu
+ORDER BY sql_cpu DESC;
+"@
+
+        $memoryUsageQuery = @"
+SELECT
+    physical_memory_in_use_kb / 1024 AS memory_used_mb
+FROM sys.dm_os_process_memory;
+"@
+
+        function Invoke-QueryInternal {
+            param(
+                [string] $Query
+            )
+
+            $cmd = $this.Connection.CreateCommand()
+            $cmd.CommandText = $Query
+            $reader = $null
+
+            try {
+                $reader = $cmd.ExecuteReader()
+                $table = New-Object System.Data.DataTable
+                $table.Load($reader)
+                return $table
+            }
+            finally {
+                if ($reader) {
+                    $reader.Close()
+                }
+                $cmd.Dispose()
+            }
+        }
+
+        Write-DBLiteLog -Level "Info" -Message "Retrieving performance statistics..."
+
+        try {
+
+            $qpsRow = Invoke-QueryInternal $queriesPerSecondQuery | Select-Object -First 1
+            $connRow = Invoke-QueryInternal $connectionsQuery | Select-Object -First 1
+            $cpuRow = Invoke-QueryInternal $cpuUsageQuery | Select-Object -First 1
+            $memoryRow = Invoke-QueryInternal $memoryUsageQuery | Select-Object -First 1
+
+            Write-DBLiteLog -Level "Info" -Message "Retrieved performance statistics successfully."
+
+            return [PSCustomObject]@{
+                Timestamp = Get-Date
+                Database  = $this.Name
+                Load      = @{
+                    QueriesPerSecond = [int]$qpsRow.batch_requests_per_sec
+                    Connections      = [int]$connRow.total_connections
+                }
+                Cpu       = @{
+                    SqlServerPercent = [int]$cpuRow.sql_cpu_percent
+                }
+                Memory    = @{
+                    UsedMB = [int]$memoryRow.memory_used_mb
+                }
+            }
+        }
+        catch {
+            $errorMessage = $_.Exception.Message
+            Write-DBLiteLog -Level "Error" -Message "Failed to retrieve performance statistics: $errorMessage"
+            throw
+        }
+    } -Force
+
+    $provider | Add-Member -MemberType ScriptMethod -Name GetUsers -Value {
+        if (-not $this.IsConnected) {
+            Write-DBLiteLog -Level "Error" -Message "Attempted to get users while not connected to the database."
+            throw "Not connected to the database."
+        }
+
+        $query = @"
+SELECT
+    name AS Username,
+    type_desc AS Type,
+    is_disabled AS IsDisabled,
+    create_date AS CreatedOn,
+    modify_date AS ModifiedOn
+FROM sys.sql_logins
+"@
+
+        $cmd = $this.Connection.CreateCommand()
+        $cmd.CommandText = $query
+        $reader = $null
+
+        try {
+            $reader = $cmd.ExecuteReader()
+            $table = New-Object System.Data.DataTable
+            $table.Load($reader)
+            return $table
+        }
+        catch {
+            $errorMessage = $_.Exception.Message
+            Write-DBLiteLog -Level "Error" -Message "Failed to retrieve users: $errorMessage"
+            throw
+        }
+        finally {
+            if ($reader) {
+                $reader.Close()
+            }
+            $cmd.Dispose()
+        }
+    } -Force
+
     return $provider
 }

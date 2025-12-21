@@ -76,6 +76,7 @@ function New-MainForm {
         "Backup Manager"
         "Performance"
         "Indexes"
+        "Users"
     )
 
     # Navigation buttons
@@ -172,7 +173,7 @@ function New-NavigationController {
         )
 
         # Dispose previous view, unless it is Query History
-        if ($null -ne $this.CurrentView -and $ViewName -ne "Query History" -and $ViewName -ne "Indexes") {
+        if ($null -ne $this.CurrentView -and $ViewName -ne "Query History" -and $ViewName -ne "Indexes" -and $ViewName -ne "Users") {
             $this.ContentPanel.Controls.Clear()
             $this.CurrentView.Dispose()
         }
@@ -193,7 +194,7 @@ function New-NavigationController {
         }
 
 
-        if ($ViewName -ne "Query History" -and $ViewName -ne "Indexes") {
+        if ($ViewName -ne "Query History" -and $ViewName -ne "Indexes" -and $ViewName -ne "Users") {
             $this.ContentPanel.Controls.Add($view, 0, 0)
             $this.CurrentView = $view
         }
@@ -242,7 +243,16 @@ function Start-DBLiteGUI {
         $Provider
     )
 
+    $iconPath = Join-Path $PSScriptRoot "assets\icon.ico"
     $form = New-MainForm -Provider $Provider
+
+    if (Test-Path $iconPath) {
+        $form.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon($iconPath)
+    }
+    else {
+        Write-DBLiteLog -Level "Warning" -Message "Application icon not found at $iconPath"
+    }
+
     $form.ShowDialog()
 }
 

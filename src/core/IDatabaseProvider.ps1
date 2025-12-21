@@ -102,5 +102,15 @@ function New-IDatabaseProvider {
         throw "GetIndexes() not implemented yet"
     }
 
+    $provider | Add-Member -MemberType ScriptMethod -Name GetPerformanceStats -Value {
+        Write-DBLiteLog -Level "Error" -Message "GetPerformanceStats() was called on a provider that has no implementation."
+        throw "GetPerformanceStats() not implemented yet"
+    }
+
+    $provider | Add-Member -MemberType ScriptMethod -Name GetUsers -Value {
+        Write-DBLiteLog -Level "Error" -Message "GetUsers() was called on a provider that has no implementation."
+        throw "GetUsers() not implemented yet"
+    }
+
     return $provider
 }
