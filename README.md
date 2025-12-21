@@ -9,10 +9,10 @@ A lightweight Powershell database inspector with WinForms.
 - [x] Logging module
 - [x] Query editor
 - [x] Query history
-- [ ] Performance analysis
-- [ ] Index analysis
+- [x] Performance analysis
+- [x] Index analysis
 - [x] Backup manager
-- [ ] Schema browser
+- [x] Schema browser
 - [ ] Schema visualization
 - [x] Error handling with informative messages
 - [x] Pester tests
