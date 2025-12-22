@@ -30,8 +30,8 @@ It aims to provide fast database access, clear visualizations of tables, indexes
 
 ## Purpose
 
-This module is used for managing and exploring relational databases without needing full-featured database management tools.  
-Target users include database administrators, developers, and IT professionals who work with multiple database types.  
+This module is used for managing and exploring relational databases without needing full-featured database management tools.
+Target users include database administrators, developers, and IT professionals who work with multiple database types.
 Typical scenarios include browsing table structures, inspecting indexes, running queries, tracking query history, and performing lightweight database maintenance tasks.
 
 ---
