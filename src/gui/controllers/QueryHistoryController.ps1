@@ -18,15 +18,24 @@ Array of objects representing executed queries, including database name, query t
 function Get-QueryHistory {
     param(
         [Parameter(Mandatory = $true, Position = 0)]
-        [string] $Database,
-        [Parameter(Mandatory = $false, Position = 1)]
-        [ValidateSet("Success", "Failure")] $ExecutionStatus
+        [string] $Database
     )
 
     $queryHistoryFile = Initialize-QueryHistoryFile
 
-    $queryHistory = Get-Content $queryHistoryFile -Raw | ConvertFrom-Json
-    $results = $queryHistory | Where-Object { $_.Database -eq $Database }
+    if (-not (Test-Path $queryHistoryFile)) {
+        Write-DBLiteLog -Level "Warning" -Message "Query history file not found: $queryHistoryFile"
+        return @()
+    }
 
-    return $results
+    try {
+        $queryHistory = Get-Content $queryHistoryFile -Raw | ConvertFrom-Json
+        $results = $queryHistory | Where-Object { $_.Database -eq $Database }
+
+        return @($results)
+    }
+    catch {
+        Write-DBLiteLog -Level "Error" -Message "Failed to parse query history file: $($_.Exception.Message)"
+        throw
+    }
 }

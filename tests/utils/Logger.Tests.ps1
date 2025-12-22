@@ -1,34 +1,32 @@
 BeforeAll {
-    Import-Module "$PSScriptRoot\..\..\DBLite\DBLite.psm1" -Force
+    . "$PSScriptRoot\..\TestBootstrap.ps1"
 }
 
 Describe "Write-DBLiteLog" {
 
-    InModuleScope DBLite {
 
-        BeforeEach {
-            Mock Initialize-LogFile { "TestDrive:\logs\dblite$(Get-Date -Format 'yyyy-MM-dd').log" }
-            Mock Format-LogEntry { "2024-01-01 12:00:00 [INFO]: This is a mocked log message." }
-            Mock Add-Content { }
+    BeforeEach {
+        Mock Initialize-LogFile { "TestDrive:\logs\dblite-$(Get-Date -Format 'yyyy-MM-dd').log" }
+        Mock Format-LogEntry { "2024-01-01 12:00:00 [INFO]: This is a mocked log message." }
+        Mock Add-Content { }
+    }
+
+    It "calls all helper functions with correct parameters" {
+        $logTimestamp = Get-Date ("2024-01-01 12:00:00")
+
+        Write-DBLiteLog -Level "Info" -Timestamp $logTimestamp -Message "This is a mocked log message."
+
+        Assert-MockCalled Initialize-LogFile -Times 1
+
+        Assert-MockCalled -CommandName Format-LogEntry -Times 1 -ParameterFilter {
+            $Level -eq "Info" -and
+            $Timestamp -eq $logTimestamp -and
+            $Message -eq "This is a mocked log message."
         }
 
-        It "calls all helper functions with correct parameters" {
-            $logTimestamp = Get-Date ("2024-01-01 12:00:00")
-
-            Write-DBLiteLog -Level "Info" -Timestamp $logTimestamp -Message "This is a mocked log message."
-
-            Assert-MockCalled Initialize-LogFile -Times 1
-
-            Assert-MockCalled -CommandName Format-LogEntry -Times 1 -ParameterFilter {
-                $Level -eq "Info" -and
-                $Timestamp -eq $logTimestamp -and
-                $Message -eq "This is a mocked log message."
-            }
-
-            Assert-MockCalled -CommandName Add-Content -Times 1 -ParameterFilter {
-                $Path -eq "TestDrive:\logs\dblite$(Get-Date -Format 'yyyy-MM-dd').log" -and
-                $Value -eq "2024-01-01 12:00:00 [INFO]: This is a mocked log message."
-            }
+        Assert-MockCalled -CommandName Add-Content -Times 1 -ParameterFilter {
+            $Path -eq "TestDrive:\logs\dblite-$(Get-Date -Format 'yyyy-MM-dd').log" -and
+            $Value -eq "2024-01-01 12:00:00 [INFO]: This is a mocked log message."
         }
     }
 }
@@ -56,7 +54,7 @@ Describe "Initialize-LogFile" {
 
         Test-Path $basePath | Should -BeTrue
 
-        $expectedFile = Join-Path $basePath "dblite$(Get-Date -Format 'yyyy-MM-dd').log"
+        $expectedFile = Join-Path $basePath "dblite-$(Get-Date -Format 'yyyy-MM-dd').log"
         $result | Should -Be $expectedFile
         Test-Path $expectedFile | Should -BeTrue
     }
@@ -95,90 +93,85 @@ Describe "Initialize-LogFile" {
 
 Describe "Write-QueryLog" {
 
-    InModuleScope DBLite {
-        BeforeEach {
-            Mock Initialize-QueryHistoryFile { Join-Path $TestDrive 'queryhistory.json' }
-            Mock Write-DBLiteLog {}
-            $path = Join-Path $TestDrive 'queryhistory.json'
+    BeforeEach {
+        Mock Initialize-QueryHistoryFile { Join-Path $TestDrive 'queryhistory.json' }
+        Mock Write-DBLiteLog {}
+        $path = Join-Path $TestDrive 'queryhistory.json'
+    }
+
+    Context "When history file does not exist" {
+        It "creates new history file with one entry" {
+            Test-Path $path | Should -BeFalse
+            Write-QueryLog -Database 'TestDb' -QueryText "SELECT 1"
+
+            $content = Get-Content $path -Raw | ConvertFrom-Json
+            $content.Count | Should -Be 1
+            $content[0].Database | Should -Be 'TestDb'
         }
+    }
 
-        Context "When history file does not exist" {
-            It "creates new history file with one entry" {
-                Test-Path $path | Should -BeFalse
-                Write-QueryLog -Database 'TestDb' -QueryText "SELECT 1"
+    Context "When history file is empty" {
+        It "initializes history when file is empty" {
 
-                $content = Get-Content $path -Raw | ConvertFrom-Json
-                $content.Count | Should -Be 1
-                $content[0].Database | Should -Be 'TestDb'
-            }
+            "" | Set-Content $path
+            Test-Path $path | Should -BeTrue
+
+            Write-QueryLog -Database 'TestDb' -QueryText 'SELECT 1'
+
+            (Get-Content $path -Raw | ConvertFrom-Json).Count | Should -Be 1
         }
+    }
 
-        Context "When history file is empty" {
-            It "initializes history when file is empty" {
+    Context "When history file has existing entries" {
+        It "appends new entry to existing query history" {
+            @(
+                @{ Database = "OldDb"; QueryText = "SELECT 0" }
+            ) | ConvertTo-Json | Set-Content $path
 
-                "" | Set-Content $path
-                Test-Path $path | Should -BeTrue
+            Write-QueryLog -Database "NewDb" -QueryText "SELECT 1"
 
-                Write-QueryLog -Database 'TestDb' -QueryText 'SELECT 1'
-
-                (Get-Content $path -Raw | ConvertFrom-Json).Count | Should -Be 1
-            }
-        }
-
-        Context "When history file has existing entries" {
-            It "appends new entry to existing query history" {
-                @(
-                    @{ Database = "OldDb"; QueryText = "SELECT 0" }
-                ) | ConvertTo-Json | Set-Content $path
-
-                Write-QueryLog -Database "NewDb" -QueryText "SELECT 1"
-
-                $content = Get-Content $path -Raw | ConvertFrom-Json
-                $content.Count | Should -Be 2
-            }
+            $content = Get-Content $path -Raw | ConvertFrom-Json
+            $content.Count | Should -Be 2
         }
     }
 }
 
 Describe "Initialize-QueryHistoryFile" {
-    InModuleScope DBLite {
-        BeforeEach {
-            Mock Write-DBLiteLog {}
-            $path = Join-Path $TestDrive 'queryhistory.json'
-        }
+    BeforeEach {
+        Mock Write-DBLiteLog {}
+        $path = Join-Path $TestDrive 'queryhistory.json'
+    }
 
-        Context "When file does not exist" {
-            It " creates query history file with empty object" {
-                Test-Path $path | Should -BeFalse
+    Context "When file does not exist" {
+        It " creates query history file with empty object" {
+            Test-Path $path | Should -BeFalse
 
-                Initialize-QueryHistoryFile -BasePath $path | Should -Be $path
+            Initialize-QueryHistoryFile -BasePath $path | Should -Be $path
 
-                Test-Path $path | Should -BeTrue
-                Get-Content $path -Raw | Should -Be "{}"
-            }
-        }
-
-        Context "When file already exists" {
-            It "does not overwrite existing file" {
-                '{"existing":true}' | Set-Content $path
-                Initialize-QueryHistoryFile -BasePath $path | Should -Be $path
-
-                (Get-Content $path -Raw).Trim() | Should -Be '{"existing":true}'
-            }
-        }
-
-        Context "When file creation fails" {
-            It "logs error and does not throw" {
-                Mock New-Item { throw "disk full" }
-
-                { Initialize-QueryHistoryFile -BasePath $path } | Should -Not -Throw
-
-                Assert-MockCalled Write-DBLiteLog -ParameterFilter {
-                    $Level -eq "Error"
-                } -Times 1
-            }
+            Test-Path $path | Should -BeTrue
+            Get-Content $path -Raw | Should -Be "{}"
         }
     }
 
+    Context "When file already exists" {
+        It "does not overwrite existing file" {
+            '{"existing":true}' | Set-Content $path
+            Initialize-QueryHistoryFile -BasePath $path | Should -Be $path
+
+            (Get-Content $path -Raw).Trim() | Should -Be '{"existing":true}'
+        }
+    }
+
+    Context "When file creation fails" {
+        It "logs error and does not throw" {
+            Mock New-Item { throw "disk full" }
+
+            { Initialize-QueryHistoryFile -BasePath $path } | Should -Not -Throw
+
+            Assert-MockCalled Write-DBLiteLog -ParameterFilter {
+                $Level -eq "Error"
+            } -Times 1
+        }
+    }
 }
 

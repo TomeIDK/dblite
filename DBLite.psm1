@@ -1,11 +1,11 @@
 $src = Join-Path $PSScriptRoot '\src'
 
 # Core
-Get-ChildItem "$src\core" -Filter *.ps1 -ErrorAction SilentlyContinue |
+Get-ChildItem "$src\core" -Filter *.ps1 |
 ForEach-Object { . $_ }
 
 # Utils
-Get-ChildItem "$src\utils" -Filter *.ps1 -ErrorAction SilentlyContinue |
+Get-ChildItem "$src\utils" -Filter *.ps1 |
 ForEach-Object { . $_ }
 
 # Providers

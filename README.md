@@ -21,5 +21,6 @@ A lightweight Powershell database inspector with WinForms.
 Wat, waarvoor, hoe installeren, configureren, hoe te gebruiken, sources, code references, psd1 files, README heel belangrijk, demo met large-scale complex data
 
 Sources:
-https://learn.microsoft.com/en-us/powershell/scripting/developer/module/how-to-write-a-powershell-module-manifest?view=powershell-7.5
+https://learn.microsoft.com/en-us/powershell/scripting/developer/module/ how-to-write-a-powershell-module-manifest?view=powershell-7.5
 https://ss64.com/ps/messagebox.html
+https://pester.dev/docs/quick-start

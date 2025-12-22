@@ -9,10 +9,17 @@ function Get-QueryHistoryStats {
 
     # Load JSON
     if (-not (Test-Path $FilePath)) {
-        throw "Query history file not found: $FilePath"
+        Write-DBLiteLog -Level "Warning" -Message "Query history file not found: $FilePath"
+        return $null
     }
 
-    $allData = Get-Content $FilePath -Raw | ConvertFrom-Json
+    try {
+        $allData = Get-Content $FilePath -Raw | ConvertFrom-Json
+    }
+    catch {
+        Write-DBLiteLog -Level "Error" -Message "Failed to parse query history file: $($_.Exception.Message)"
+        throw
+    }
 
     # Filter by database and successful queries
     $filtered = $allData | Where-Object {
