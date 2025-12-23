@@ -7,52 +7,11 @@ function New-Performance {
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -AssemblyName System.Drawing
 
-    # =====================
-    # Helper function to create stat labels
-    # =====================
-    function New-StatLabel {
-        param(
-            [string] $text
-        )
-
-        $lbl = New-Object System.Windows.Forms.Label
-        $lbl.Text = $text
-        $lbl.Font = New-Object System.Drawing.Font("Segoe UI", 10)
-        $lbl.AutoSize = $true
-        $lbl.Margin = [System.Windows.Forms.Padding]::new(0, 0, 50, 20)
-
-        return $lbl
-    }
-
 
     # =====================
     # Top Bar
     # =====================
-    $topBar = New-Object System.Windows.Forms.Panel
-    $topBar.Height = 50
-    $topBar.Dock = "Top"
-    $topBar.BackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
-    $topBar.Padding = [System.Windows.Forms.Padding]::new(10)
-
-
-    # =====================
-    # Title Label
-    # =====================
-    $title = New-Object System.Windows.Forms.Label
-    $title.Text = "Performance"
-    $title.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
-    $title.AutoSize = $true
-    $title.Location = New-Object System.Drawing.Point(10, 10)
-
-
-    # =====================
-    # Buttons Container
-    # =====================
-    $btnPanel = New-Object System.Windows.Forms.FlowLayoutPanel
-    $btnPanel.FlowDirection = "RightToLeft"
-    $btnPanel.Dock = "Fill"
-    $btnPanel.WrapContents = $false
-    $btnPanel.AutoSize = $true
+    $topBar = New-TopBar -Title "Performance"
 
 
     # =====================
@@ -139,9 +98,6 @@ function New-Performance {
     $dbliteFlowPanel.Controls.Add($slowestQueryStatLabel, 1, 1)
     $dbliteFlowPanel.Controls.Add($lastExecutedQueryStatLabel, 1, 2)
     $dbliteGroupBox.Controls.Add($dbliteFlowPanel)
-
-    $topBar.Controls.Add($title)
-    $topBar.Controls.Add($btnPanel)
 
     $viewLayout.Controls.Add($topBar, 0, 0)
     $viewLayout.Controls.Add($dbGroupBox, 0, 1)

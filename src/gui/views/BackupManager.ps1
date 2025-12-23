@@ -9,61 +9,11 @@ function New-BackupManager {
 
     $AssetsPath = Join-Path $PSScriptRoot "..\assets"
 
-    function New-StyledButton {
-        param(
-            [Parameter(Mandatory = $true)]
-            [string] $Name,
-            [System.Drawing.Image] $Icon
-        )
-
-        $btn = New-Object System.Windows.Forms.Button
-        $btn.Text = $Name
-        $btn.AutoSize = $true
-        $btn.AutoSizeMode = "GrowAndShrink"
-        $btn.Padding = [System.Windows.Forms.Padding]::new(10, 0, 10, 0)
-        $btn.BackColor = [System.Drawing.Color]::FromArgb(50, 115, 220)
-        $btn.ForeColor = [System.Drawing.Color]::White
-        $btn.FlatStyle = "Flat"
-        $btn.FlatAppearance.BorderSize = 0
-        $btn.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
-        $btn.TextAlign = "MiddleCenter"
-
-        if ($Icon) {
-            $btn.Image = $Icon
-            $btn.ImageAlign = "MiddleLeft"
-            $btn.TextImageRelation = "ImageBeforeText"
-        }
-
-        return $btn
-    }
-
 
     # =====================
     # Top Bar
     # =====================
-    $topBar = New-Object System.Windows.Forms.Panel
-    $topBar.Height = 50
-    $topBar.Dock = "Top"
-    $topBar.BackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
-    $topBar.Padding = [System.Windows.Forms.Padding]::new(10)
-
-    # =====================
-    # Title Label
-    # =====================
-    $title = New-Object System.Windows.Forms.Label
-    $title.Text = "Backup Manager"
-    $title.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
-    $title.AutoSize = $true
-    $title.Location = New-Object System.Drawing.Point(10, 10)
-
-    # =====================
-    # Buttons Container
-    # =====================
-    $btnPanel = New-Object System.Windows.Forms.FlowLayoutPanel
-    $btnPanel.FlowDirection = "RightToLeft"
-    $btnPanel.Dock = "Fill"
-    $btnPanel.WrapContents = $false
-    $btnPanel.AutoSize = $true
+    $topBar = New-TopBar -Title "Backup Manager" -WithButtons
 
 
     # =====================
@@ -180,7 +130,7 @@ function New-BackupManager {
     # =====================
     # Button Panel Buttons
     # =====================
-    $btnCreateBackup = New-StyledButton -Name "Create Backup" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "add-icon-white-small.png")))
+    $btnCreateBackup = New-ButtonPanelButton -Name "Create Backup" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "add-icon-white-small.png")))
 
     # Open a modal to confirm creating a backup then save it
     $btnCreateBackup.Add_Click({
@@ -188,14 +138,16 @@ function New-BackupManager {
                 [System.Windows.Forms.MessageBox]::Show('Please select a backup location.', 'No location selected', 'OK', 'Warning')
                 return
             }
+
             $modal = New-Object System.Windows.Forms.Form
             $modal.Text = "Confirm Backup"
-            $modal.AutoSize = $true
-            $modal.AutoSizeMode = "GrowAndShrink"
+            $modal.Text = $Title
             $modal.StartPosition = "CenterParent"
             $modal.FormBorderStyle = "FixedDialog"
             $modal.MaximizeBox = $false
             $modal.MinimizeBox = $false
+            $modal.AutoSize = $true
+            $modal.AutoSizeMode = 'GrowAndShrink'
             $modal.Icon = [System.Drawing.SystemIcons]::Question
 
             $modalLayout = New-Object System.Windows.Forms.TableLayoutPanel
@@ -265,7 +217,7 @@ function New-BackupManager {
             $modal.ShowDialog()
         }.GetNewClosure())
 
-    $btnHistory = New-StyledButton -Name "History" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "history-icon-white-small.png")))
+    $btnHistory = New-ButtonPanelButton -Name "History" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "history-icon-white-small.png")))
 
     # Open a DataGridView with backup history for this database
     $btnHistory.Add_Click({
@@ -289,12 +241,7 @@ function New-BackupManager {
             $compressionCheckbox
         ))
 
-    $btnPanel.Controls.Add($btnHistory)
-    $btnPanel.Controls.Add($btnCreateBackup)
-
-    $topBar.Controls.Add($title)
-    $topBar.Controls.Add($lastBackupLabel)
-    $topBar.Controls.Add($btnPanel)
+    $topBar.Tag.ButtonPanel.Controls.AddRange(@($btnHistory, $btnCreateBackup))
 
     $viewLayout.Controls.Add($topBar, 0, 0)
     $viewLayout.Controls.Add($warningLabel, 0, 1)

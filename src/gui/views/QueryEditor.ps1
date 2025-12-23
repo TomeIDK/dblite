@@ -14,60 +14,8 @@ function New-QueryEditor {
     # =====================
     # Top bar
     # =====================
-    $topBar = New-Object System.Windows.Forms.Panel
-    $topBar.Height = 50
-    $topBar.Dock = "Top"
-    $topBar.BackColor = [System.Drawing.Color]::FromArgb(240, 240, 240)
-    $topBar.Padding = [System.Windows.Forms.Padding]::new(10)
+    $topBar = New-TopBar -Title "Query Editor" -WithButtons
 
-    # =====================
-    # Title label
-    # =====================
-    $title = New-Object System.Windows.Forms.Label
-    $title.Text = "Query Editor"
-    $title.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
-    $title.AutoSize = $true
-    $title.Location = New-Object System.Drawing.Point(10, 10)
-
-    # =====================
-    # Buttons container
-    # =====================
-    $btnPanel = New-Object System.Windows.Forms.FlowLayoutPanel
-    $btnPanel.FlowDirection = "RightToLeft"
-    $btnPanel.Dock = "Fill"
-    $btnPanel.WrapContents = $false
-    $btnPanel.AutoSize = $true
-
-    # =====================
-    # Button factory
-    # =====================
-    function New-StyledButton {
-        param(
-            [Parameter(Mandatory = $true)]
-            [string] $Name,
-            [System.Drawing.Image] $Icon
-        )
-
-        $btn = New-Object System.Windows.Forms.Button
-        $btn.Text = $Name
-        $btn.AutoSize = $true
-        $btn.AutoSizeMode = "GrowAndShrink"
-        $btn.Padding = [System.Windows.Forms.Padding]::new(10, 0, 10, 0)
-        $btn.BackColor = [System.Drawing.Color]::FromArgb(50, 115, 220)
-        $btn.ForeColor = [System.Drawing.Color]::White
-        $btn.FlatStyle = "Flat"
-        $btn.FlatAppearance.BorderSize = 0
-        $btn.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
-        $btn.TextAlign = "MiddleCenter"
-
-        if ($Icon) {
-            $btn.Image = $Icon
-            $btn.ImageAlign = "MiddleLeft"
-            $btn.TextImageRelation = "ImageBeforeText"
-        }
-
-        return $btn
-    }
 
     # =====================
     # SQL input textbox
@@ -112,7 +60,7 @@ function New-QueryEditor {
     # =====================
     # Buttons
     # =====================
-    $btnRun = New-StyledButton -Name "Run" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "run-icon-white-small.png")))
+    $btnRun = New-ButtonPanelButton -Name "Run" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "run-icon-white-small.png")))
 
     # Run the query in the textbox
     $btnRun.Add_Click({
@@ -120,18 +68,20 @@ function New-QueryEditor {
             $dt | Out-GridView -Title "DBLite | Query Results"
         }.GetNewClosure())
 
-    $btnSave = New-StyledButton -Name "Save Query" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "save-icon-white-small.png")))
+    $btnSave = New-ButtonPanelButton -Name "Save Query" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "save-icon-white-small.png")))
 
     # Open a modal prompting the user to enter a name to save the query in the text box
     $btnSave.Add_Click({
             $modal = New-Object System.Windows.Forms.Form
             $modal.Text = "Save Query"
+            $modal.Text = $Title
             $modal.StartPosition = "CenterParent"
             $modal.FormBorderStyle = "FixedDialog"
             $modal.MaximizeBox = $false
             $modal.MinimizeBox = $false
             $modal.AutoSize = $true
             $modal.AutoSizeMode = 'GrowAndShrink'
+            $modal.Icon = [System.Drawing.SystemIcons]::Question
 
             $layout = New-Object System.Windows.Forms.TableLayoutPanel
             $layout.AutoSize = $true
@@ -173,8 +123,10 @@ function New-QueryEditor {
             $btnOk.Add_Click({
                     $name = $nameBox.Text.Trim()
                     if ($name) {
-                        Save-SavedQuery -Name $name -Sql $sqlBox.Text
-                        Add-ListBoxSavedQueries -ListBox $savedList
+                        & $Global:SaveSavedQuery -Name $name -Sql $sqlBox.Text
+                        & $Global:AddListBoxSavedQueries -ListBox $savedList
+
+                        $modal.DialogResult = [System.Windows.Forms.DialogResult]::OK
                         $modal.Close()
                     }
                     else {
@@ -188,7 +140,10 @@ function New-QueryEditor {
                 })
 
             # Cancel saving the query
-            $btnCancel.Add_Click({ $modal.Close() })
+            $btnCancel.Add_Click({
+                    $modal.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+                    $modal.Close()
+                })
 
             $buttonPanel.Controls.AddRange(@($btnOk, $btnCancel))
             $layout.Controls.Add($label, 0, 0)
@@ -201,14 +156,14 @@ function New-QueryEditor {
 
         }.GetNewClosure())
 
-    $btnClear = New-StyledButton -Name "Clear" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "trash-icon-white-small.png")))
+    $btnClear = New-ButtonPanelButton -Name "Clear" -Icon ([System.Drawing.Image]::FromFile((Join-Path $AssetsPath "trash-icon-white-small.png")))
 
     # Clear the text box
     $btnClear.Add_Click({
             $sqlBox.Text = ""
         }.GetNewClosure())
 
-    $btnPanel.Controls.AddRange(@($btnRun, $btnSave, $btnClear))
+    $topBar.Tag.ButtonPanel.Controls.AddRange(@($btnRun, $btnSave, $btnClear))
 
 
     # =====================
@@ -218,9 +173,6 @@ function New-QueryEditor {
     $viewLayout.Dock = "Fill"
     $viewLayout.RowCount = 5
     $viewLayout.ColumnCount = 1
-
-    $topBar.Controls.Add($title)
-    $topBar.Controls.Add($btnPanel)
 
     $viewLayout.Controls.Add($topBar, 0, 0)
     $viewLayout.Controls.Add($sqlBox, 0, 1)

@@ -13,8 +13,20 @@ Get-ChildItem "$src\providers" -Recurse -Filter *.ps1 |
 ForEach-Object { . $_ }
 
 # GUI
-Get-ChildItem "$src\gui" -Recurse -Filter *.ps1 |
+. "$src\gui\Components.ps1"
+. "$src\gui\MainForm.ps1"
+
+# Controllers
+Get-ChildItem "$src\gui\controllers" -Filter *.ps1 |
 ForEach-Object { . $_ }
+
+# Views
+Get-ChildItem "$src\gui\views" -Filter *.ps1 |
+ForEach-Object { . $_ }
+
+# Make functions used in click handlers global
+$Global:SaveSavedQuery = ${function:Save-SavedQuery}
+$Global:AddListBoxSavedQueries = ${function:Add-ListBoxSavedQueries}
 
 
 
