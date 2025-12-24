@@ -44,10 +44,10 @@ function New-SqlServerProvider {
             $this.Connection.Open()
             $this.Name = $this.Connection.Database
             $this.IsConnected = $true
-            Write-DBLiteLog -Level "Info" -Message "Connected to SQL Server database $($this.Name) with connection string: $ConnInput"
+            Write-DBLiteLog -Level "Info" -Message "Connected to SQL Server database $($this.Name)"
         }
         catch {
-            Write-DBLiteLog -Level "Error" -Message "Failed to connect to SQL Server database with connection string $($ConnInput):`n$_"
+            Write-DBLiteLog -Level "Error" -Message "Failed to connect to SQL Server database:`n$_"
             throw "SQL Server connection failed: $_"
         }
     } -Force
@@ -92,7 +92,6 @@ function New-SqlServerProvider {
 
             $table = New-Object System.Data.DataTable
             $table.Load($reader)
-            $reader.Close()
 
             return $table
         }
@@ -108,6 +107,9 @@ function New-SqlServerProvider {
         finally {
             if ($reader) {
                 $reader.Close()
+            }
+            if ($cmd) {
+                $cmd.Dispose()
             }
         }
 
@@ -221,6 +223,9 @@ ORDER BY t.name, c.column_id;
             if ($reader) {
                 $reader.Close()
             }
+            if ($cmd) {
+                $cmd.Dispose()
+            }
         }
     }-Force
 
@@ -269,6 +274,7 @@ ORDER BY t.name, c.column_id;
             $errorMessage = $_.Exception.Message
             Write-DBLiteLog -Level "Error" -Message "Failed to create backup: $errorMessage"
             Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Failure"
+            throw
         }
     } -Force
 
@@ -304,7 +310,6 @@ ORDER BY bs.backup_finish_date DESC;
 
             $table = New-Object System.Data.DataTable
             $table.Load($reader)
-            $reader.Close()
 
             return $table
         }
@@ -320,6 +325,9 @@ ORDER BY bs.backup_finish_date DESC;
         finally {
             if ($reader) {
                 $reader.Close()
+            }
+            if ($cmd) {
+                $cmd.Dispose()
             }
         }
 
@@ -594,6 +602,9 @@ ORDER BY
             if ($reader) {
                 $reader.Close()
             }
+            if ($cmd) {
+                $cmd.Dispose()
+            }
         }
     } -Force
 
@@ -661,7 +672,9 @@ FROM sys.dm_os_process_memory;
                 if ($reader) {
                     $reader.Close()
                 }
-                $cmd.Dispose()
+                if ($cmd) {
+                    $cmd.Dispose()
+                }
             }
         }
 
@@ -733,7 +746,9 @@ FROM sys.sql_logins
             if ($reader) {
                 $reader.Close()
             }
-            $cmd.Dispose()
+            if ($cmd) {
+                $cmd.Dispose()
+            }
         }
     } -Force
 

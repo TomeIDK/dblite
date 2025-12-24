@@ -231,6 +231,9 @@ function Write-QueryLog {
 
         $queryHistory | ConvertTo-Json | Set-Content $queryHistoryFile -Encoding UTF8
 
+        # Truncate very long queries
+        if ($QueryText.Length -gt 500) { $QueryText = $QueryText.Substring(0, 500) + "..." }
+
 
         Write-DBLiteLog -Level "Info" -Message "Logged query execution: '$QueryText' Status: $ExecutionStatus AffectedRows: $AffectedRows ExecutionTime: $($ExecutionTime)ms"
     }
