@@ -1,39 +1,35 @@
 <#
 .SYNOPSIS
-Creates a SQL Server database provider with full connection, query, and backup capabilities.
+Creates a SQL Server provider object for DBLite with methods for managing databases, queries, backups, and metadata.
 
 .DESCRIPTION
-Initializes a database provider object for SQL Server, implementing methods for connecting, disconnecting, running queries, retrieving tables, managing backups, and retrieving SQL Server edition information. All operations are logged using the Logger module, and query executions are logged in the query history.
+Initializes a SQL Server provider object that allows connecting to a database, running queries, fetching table schemas and indexes, performing backups, and retrieving performance stats and users. Designed for use with DBLite's logging and query tracking system. Each method logs actions and errors. Side effects include opening and closing database connections. Returns a PSCustomObject with multiple methods representing provider operations.
 
-.METHODS
-Connect
-    Establishes a connection to a SQL Server database using a connection string. Sets IsConnected to $true on success. Throws an error if connection fails.
+.PARAMETER None
+This function takes no parameters. All configuration is handled via methods on the returned provider object.
 
-Disconnect
-    Closes the current SQL Server connection and sets IsConnected to $false.
+.EXAMPLE
+PS> $provider = New-SqlServerProvider
+Initializes a new SQL Server provider object. You can then connect using:
+$provider.Connect("Server=.;Database=MyDB;User Id=sa;Password=secret;")
 
-RunQuery
-    Executes a SQL query on the connected database. Returns a DataTable with results on success or a PSCustomObject with an error message on failure. Logs execution success or failure.
+.EXAMPLE
+PS> $provider.Connect("Server=.;Database=MyDB;Integrated Security=True;")
+Connects to the SQL Server database using Windows authentication. Logs success or failure and sets connection state.
 
-GetTables
-    Retrieves the list of base tables in the connected database. Returns an array of table names. Throws an error if not connected.
+.EXAMPLE
+PS> $tables = $provider.GetTables()
+Retrieves all tables and columns with metadata including primary keys, foreign keys, uniqueness, and indexing.
 
-NewBackup
-    Creates a database backup at the specified location. Supports "Full" and "Differential" backup types and optional compression. Logs success or failure.
+.EXAMPLE
+PS> $provider.NewBackup("C:\Backups\MyDB.bak", "Full", $true)
+Creates a full compressed backup of the current database to the specified location.
 
-GetBackupHistory
-    Retrieves the backup history for the connected database. Returns a DataTable with backup details including start/finish dates, type, file path, and user. Logs failures.
-
-GetEdition
-    Returns the SQL Server edition of the connected database instance. Throws an error if not connected.
-
-GetLatestBackup
-    Returns the finish date of the most recent backup for the connected database. Throws an error if not connected.
-
-.RETURNS
-A PSCustomObject representing a SQL Server database provider with fully implemented methods for connection, query execution, table listing, and backup management.
+.OUTPUTS
+PSCustomObject representing the SQL Server provider with methods:
+- Connect, Disconnect, RunQuery, GetTables, GetTableSchema, NewBackup, GetBackupHistory,
+  GetLatestBackup, GetEdition, GetIndexes, GetPerformanceStats, GetUsers.
 #>
-
 function New-SqlServerProvider {
     $provider = New-DatabaseProviderBase -Name "SQL Server"
 

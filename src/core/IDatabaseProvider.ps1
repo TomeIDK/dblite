@@ -1,49 +1,21 @@
 <#
 .SYNOPSIS
-Creates a new database provider object implementing the base interface.
+Creates a new database provider object with unimplemented methods.
 
 .DESCRIPTION
-Initializes a database provider object with default properties and placeholder methods for configuration, connection management, query execution, table retrieval, and backup operations. Each method logs an error and throws if called without a proper implementation. Designed as a template for concrete database provider implementations.
+Generates a PSCustomObject representing a database provider with standard
+methods such as Connect, Disconnect, RunQuery, GetTables, and backup-related functions.
+All methods currently throw errors indicating they are not implemented.
+This serves as a base template for actual database provider implementations.
 
-.PROPERTIES
-Name
-    The provider's name.
-Config
-    Configuration settings as a hashtable.
-IsConnected
-    Boolean indicating connection status.
-Connection
-    Placeholder for the connection object.
+.EXAMPLE
+PS> $provider = New-IDatabaseProvider
+Creates a new provider object with unimplemented methods.
 
-.METHODS
-Configure
-    Placeholder method for configuring the provider. Throws "not implemented" if called.
-
-Connect
-    Placeholder method to establish a database connection. Throws "not implemented" if called.
-
-Disconnect
-    Placeholder method to close a database connection. Throws "not implemented" if called.
-
-RunQuery
-    Placeholder method to execute a SQL query. Throws "not implemented" if called.
-
-GetTables
-    Placeholder method to retrieve database tables. Throws "not implemented" if called.
-
-NewBackup
-    Placeholder method to create a database backup. Throws "not implemented" if called.
-
-GetBackupHistory
-    Placeholder method to retrieve the history of backups. Throws "not implemented" if called.
-
-GetLatestBackup
-    Placeholder method to retrieve the latest backup. Throws "not implemented" if called.
-
-.RETURNS
-A PSCustomObject representing a database provider with properties and unimplemented methods.
+.EXAMPLE
+PS> $provider.Connect()
+Throws an error because the Connect method is not implemented.
 #>
-
 function New-IDatabaseProvider {
     $provider = [PSCustomObject]@{
         Name        = $null

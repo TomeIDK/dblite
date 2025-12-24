@@ -1,22 +1,26 @@
 <#
 .SYNOPSIS
-    Write a log entry to the DBLite log file.
+Writes a log entry to the DBLite log file with a specified severity level.
 
 .DESCRIPTION
-    Writes a timestamped, leveled entry to today's DBLite log file.
+Logs messages to a centralized DBLite log file, formatting each entry with a timestamp and severity level. Depending on the severity, it also outputs the message to the PowerShell host using the appropriate stream: Write-Error for errors, Write-Warning for warnings, and Write-Verbose for info or debug messages. Automatically initializes the log file if it does not exist.
 
-.PARAMETERS
-    Level
-        Log level (Debug, Info, Warning, Error). Mandatory.
+.PARAMETER Level
+The severity level of the log entry. Must be one of "Debug", "Info", "Warning", or "Error".
 
-    Message
-        Text to write to the log. Mandatory.
+.PARAMETER Timestamp
+Optional. The timestamp to include with the log entry. Defaults to the current date and time.
 
-    Timestamp
-        Optional date/time for the entry; defaults to current time.
+.PARAMETER Message
+The message text to log. Mandatory parameter.
 
 .EXAMPLE
-    Write-DBLiteLog -Level Info -Message "Database initialized." -Timestamp (Get-Date)
+PS> Write-DBLiteLog -Level "Info" -Message "Database connection established."
+Logs an informational message to the DBLite log file and outputs it as verbose.
+
+.EXAMPLE
+PS> Write-DBLiteLog -Level "Error" -Message "Failed to execute query."
+Logs an error message to the DBLite log file and writes it to the error stream.
 #>
 function Write-DBLiteLog {
     param(
@@ -40,20 +44,27 @@ function Write-DBLiteLog {
     }
 }
 
+
 <#
 .SYNOPSIS
-    Ensure the DBLite logs folder and today's log file exist.
+Initializes the DBLite log file for the current day and manages old log cleanup.
 
 .DESCRIPTION
-    Creates the logs directory if missing, creates today's logfile (dbliteyyyy-MM-dd.log),
-    and removes log files older than 30 days.
+Ensures the log directory exists and creates a new log file for the current date if it does not already exist. Automatically deletes log files older than 30 days to maintain log retention. Returns the full path to the current log file.
 
-.PARAMETERS
-    BasePath
-        Optional base path for the logs folder. Defaults to <module root>\logs.
+.PARAMETER BasePath
+Optional. The base directory where log files are stored. Defaults to "$PSScriptRoot\..\..\logs".
 
-.RETURNS
-    String: full path to today's log file.
+.EXAMPLE
+PS> Initialize-LogFile
+Creates or returns today's log file in the default log directory, deleting any logs older than 30 days.
+
+.EXAMPLE
+PS> Initialize-LogFile -BasePath "C:\MyLogs"
+Uses a custom log directory instead of the default.
+
+.OUTPUTS
+String. The full path to the initialized log file.
 #>
 function Initialize-LogFile {
     param(
@@ -80,28 +91,33 @@ function Initialize-LogFile {
     return $logFile
 }
 
+
 <#
 .SYNOPSIS
-    Format a timestamped, leveled log entry.
+Formats a log message with timestamp and severity level.
 
 .DESCRIPTION
-    Builds a consistently formatted log string: "[LEVEL] yyyy-MM-dd HH:mm:ss: Message".
+Generates a standardized string for logging purposes including the timestamp, log level, and message content. Intended for use by logging functions like Write-DBLiteLog.
 
-.PARAMETERS
-    Level
-        Log level (Debug, Info, Warning, Error). Mandatory.
+.PARAMETER Level
+Mandatory. The severity of the log message. Valid values are "Debug", "Info", "Warning", "Error".
 
-    Timestamp
-        Date/time used in the formatted entry. Mandatory.
+.PARAMETER Timestamp
+Mandatory. The date and time to include in the log entry.
 
-    Message
-        Message text to format. Mandatory.
-
-.RETURNS
-    String: the formatted log entry.
+.PARAMETER Message
+Mandatory. The text of the log message to format.
 
 .EXAMPLE
-    Format-LogEntry -Level Info -Timestamp (Get-Date) -Message "Service started"
+PS> Format-LogEntry -Level "Info" -Timestamp (Get-Date) -Message "Connection established."
+Returns a string like: "2025-12-24 18:00:01 [INFO]: Connection established."
+
+.EXAMPLE
+PS> Format-LogEntry -Level "Error" -Timestamp (Get-Date) -Message "Failed to connect to database."
+Returns a string like: "2025-12-24 18:05:10 [ERROR]: Failed to connect to database."
+
+.OUTPUTS
+String. The formatted log entry.
 #>
 function Format-LogEntry {
     param(
@@ -118,33 +134,45 @@ function Format-LogEntry {
     return "$($Timestamp.ToString("yyyy-MM-dd HH:mm:ss")) [$($Level.ToUpper())]: $Message"
 }
 
+
 <#
 .SYNOPSIS
-    Log an executed SQL query to the query history file.
+Logs SQL query execution details to a JSON history file.
 
 .DESCRIPTION
-    Adds an entry to queryhistory.json including database name, query text, execution status, affected rows, and timestamp.
-    Logs query execution success or failure to the main DBLite log.
+Records information about a query executed against a database, including its text, execution status, affected rows, execution time, and timestamp. Intended for auditing and performance tracking of queries. The log is stored in a JSON file managed by Initialize-QueryHistoryFile. Side effects include writing to disk.
 
-.PARAMETERS
-    Database
-        Name of the database where the query was executed. Mandatory.
+.PARAMETER Database
+Mandatory. The name of the database against which the query was executed.
 
-    QueryText
-        SQL text of the executed query. Mandatory.
+.PARAMETER QueryText
+Mandatory. The text of the SQL query that was executed.
 
-    ExecutionStatus
-        "Success" or "Failure". Defaults to "Success".
+.PARAMETER ExecutionStatus
+Optional. The result of the query execution. Valid values are "Success" or "Failure". Default is "Success".
 
-    AffectedRows
-        Number of rows affected by the query. Defaults to 0.
+.PARAMETER AffectedRows
+Optional. The number of rows affected by the query. Default is 0.
 
-    Timestamp
-        Optional timestamp of execution. Defaults to current time.
+.PARAMETER ExecutionTime
+Optional. The execution duration of the query in milliseconds. Default is 0.
+
+.PARAMETER Timestamp
+Optional. The date and time when the query was executed. Default is the current date and time.
 
 .EXAMPLE
-    Write-QueryLog -Database "TestDb" -QueryText "SELECT * FROM Users" -ExecutionStatus "Success" -AffectedRows 10
+PS> Write-QueryLog -Database "TestDB" -QueryText "SELECT * FROM Users"
+Logs a successful query execution for the "TestDB" database.
 
+.EXAMPLE
+PS> Write-QueryLog -Database "SalesDB" -QueryText "DELETE FROM Orders WHERE Id=5" -ExecutionStatus "Success" -AffectedRows 1 -ExecutionTime 35
+Logs a DELETE query execution with affected row count and execution time.
+
+.OUTPUTS
+None. Function writes log entries to disk and outputs nothing.
+
+.INPUTS
+None. Does not accept pipeline input.
 #>
 function Write-QueryLog {
     param(
@@ -211,20 +239,27 @@ function Write-QueryLog {
     }
 }
 
+
 <#
 .SYNOPSIS
-    Ensure the query history file exists.
+Initializes the JSON file used to store SQL query execution history.
 
 .DESCRIPTION
-    Creates queryhistory.json if missing and logs its creation.
-    Returns the full path to the query history file.
+Ensures that a query history file exists at the specified location. If the file does not exist, it creates an empty JSON file. The file is used by Write-QueryLog to store query execution details. Side effects include creating a file on disk and logging the initialization process.
 
-.PARAMETERS
-    BasePath
-        Optional full path to the query history file. Defaults to <module root>\logs\queryhistory.json.
+.PARAMETER BasePath
+Optional. The full path to the query history file. Default is "<script root>\..\..\logs\queryhistory.json".
 
-.RETURNS
-    String: full path to the query history file.
+.EXAMPLE
+PS> Initialize-QueryHistoryFile
+Creates the default query history file at the default logs folder if it does not exist.
+
+.EXAMPLE
+PS> Initialize-QueryHistoryFile -BasePath "C:\DBLite\logs\queryhistory.json"
+Creates the query history file at a custom path if it does not exist.
+
+.OUTPUTS
+String. The full path to the query history file.
 #>
 function Initialize-QueryHistoryFile {
     param(

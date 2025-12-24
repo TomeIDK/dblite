@@ -29,7 +29,28 @@ $Global:SaveSavedQuery = ${function:Save-SavedQuery}
 $Global:AddListBoxSavedQueries = ${function:Add-ListBoxSavedQueries}
 
 
+<#
+.SYNOPSIS
+Starts the DBLite application with a specified database connection.
 
+.DESCRIPTION
+Initializes a database connection using the provided connection string or alias,
+logs the connection attempt, and launches the DBLite GUI.
+Handles connection errors by logging and throwing exceptions.
+This function is the main entry point for running the DBLite application.
+
+.PARAMETER ConnectionInput
+The connection string or saved connection alias used to connect to the database.
+This parameter is mandatory and must be a valid SQL Server connection string or alias.
+
+.EXAMPLE
+PS> Start-DBLite -ConnectionInput "Server=localhost;Database=TestDB;Integrated Security=True"
+Connects to the specified database and opens the DBLite GUI.
+
+.EXAMPLE
+PS> Start-DBLite -ConnectionInput "MySavedAlias"
+Uses a saved connection alias to connect and starts the GUI.
+#>
 function Start-DBLite {
     param(
         [Parameter(Mandatory = $true, Position = 0)]

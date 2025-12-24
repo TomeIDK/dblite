@@ -1,17 +1,22 @@
-
 <#
 .SYNOPSIS
-Retrieves saved SQL queries from a JSON file.
+Retrieves saved queries from a JSON file.
 
 .DESCRIPTION
-Loads saved queries from a JSON file, returning an empty hashtable if the file does not exist or cannot be read. Automatically creates the JSON file if missing. Logs operations and errors.
+Loads saved queries from a JSON configuration file and returns them as a hashtable.
+If the file does not exist, it creates an empty savedqueries.json file.
+Logs messages for successful loading, creation, or errors during reading.
 
-.PARAMETERS
-FilePath
-    Optional path to the saved queries JSON file. Defaults to config\savedqueries.json.
+.PARAMETER FilePath
+Optional path to the saved queries JSON file. Defaults to the standard savedqueries.json in the config folder.
 
-.RETURNS
-Hashtable containing query names as keys and SQL strings as values.
+.EXAMPLE
+PS> Get-SavedQueries
+Loads saved queries from the default configuration file.
+
+.EXAMPLE
+PS> Get-SavedQueries -FilePath "C:\MyConfig\savedqueries.json"
+Loads saved queries from a custom file path.
 #>
 function Get-SavedQueries {
     param(
@@ -39,22 +44,32 @@ function Get-SavedQueries {
     }
 }
 
+
 <#
 .SYNOPSIS
 Saves a SQL query to the saved queries JSON file.
 
 .DESCRIPTION
-Adds or updates a query in the saved queries JSON file under the given name. Logs the operation.
+Adds or updates a named SQL query in the savedqueries.json configuration file.
+The function retrieves existing saved queries, updates the entry with the provided name,
+and writes the updated hashtable back to the file. Logs the save operation.
 
-.PARAMETERS
-Name
-    Name of the query to save.
+.PARAMETER Name
+The name to associate with the SQL query. This serves as the key in the saved queries file.
 
-Sql
-    SQL statement associated with the query.
+.PARAMETER Sql
+The SQL query string to save.
 
-FilePath
-    Optional path to the saved queries JSON file. Defaults to config\savedqueries.json.
+.PARAMETER FilePath
+Optional path to the saved queries JSON file. Defaults to the standard savedqueries.json in the config folder.
+
+.EXAMPLE
+PS> Save-SavedQuery -Name "GetUsers" -Sql "SELECT * FROM Users"
+Saves a query named "GetUsers" to the default savedqueries.json file.
+
+.EXAMPLE
+PS> Save-SavedQuery -Name "ActiveOrders" -Sql "SELECT * FROM Orders WHERE Status = 'Active'" -FilePath "C:\MyConfig\savedqueries.json"
+Saves the query to a custom saved queries file.
 #>
 function Save-SavedQuery {
     param(
@@ -74,19 +89,29 @@ function Save-SavedQuery {
     Write-DBLiteLog -Level "Info" -Message "Saved query: $Name"
 }
 
+
 <#
 .SYNOPSIS
-Removes a saved SQL query from the JSON file.
+Removes a saved SQL query from the saved queries JSON file.
 
 .DESCRIPTION
-Deletes the specified query from the saved queries JSON file if it exists. Logs the removal operation.
+Deletes a named query from the savedqueries.json configuration file.
+If the specified query exists, it is removed and the updated hashtable is written back to the file.
+Logs the removal action. If the query does not exist, no action is taken.
 
-.PARAMETERS
-Name
-    Name of the query to remove.
+.PARAMETER Name
+The name of the saved query to remove.
 
-FilePath
-    Optional path to the saved queries JSON file. Defaults to config\savedqueries.json.
+.PARAMETER FilePath
+Optional path to the saved queries JSON file. Defaults to the standard savedqueries.json in the config folder.
+
+.EXAMPLE
+PS> Remove-SavedQuery -Name "GetUsers"
+Removes the "GetUsers" query from the default savedqueries.json file.
+
+.EXAMPLE
+PS> Remove-SavedQuery -Name "OldOrders" -FilePath "C:\MyConfig\savedqueries.json"
+Removes the "OldOrders" query from a custom saved queries file.
 #>
 function Remove-SavedQuery {
     param(
@@ -105,16 +130,22 @@ function Remove-SavedQuery {
     }
 }
 
+
 <#
 .SYNOPSIS
-Populates a Windows Forms ListBox with saved queries.
+Populates a ListBox control with saved SQL queries.
 
 .DESCRIPTION
-Clears the provided ListBox and adds all saved queries from the JSON file. Adjusts the ListBox height based on the number of items.
+Clears the specified ListBox and loads all saved queries from the savedqueries.json file.
+Each query is added as a PSCustomObject with `Name` and `Sql` properties.
+The ListBox height is dynamically adjusted based on the number of items.
 
-.PARAMETERS
-ListBox
-    The Windows Forms ListBox control to populate.
+.PARAMETER ListBox
+The System.Windows.Forms.ListBox control to populate with saved queries.
+
+.EXAMPLE
+PS> Add-ListBoxSavedQueries -ListBox $QueryListBox
+Clears and populates the ListBox control with all saved queries from the default configuration file.
 #>
 function Add-ListBoxSavedQueries {
     param(
@@ -139,5 +170,4 @@ function Add-ListBoxSavedQueries {
 
     # Dynamically set the height based on the amount of items
     $ListBox.Height = ($ListBox.Items.Count * 20)
-
 }

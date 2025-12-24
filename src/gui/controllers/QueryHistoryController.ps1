@@ -1,19 +1,18 @@
 <#
 .SYNOPSIS
-Retrieves the history of executed queries for a specific database.
+Retrieves the query history for a specified database.
 
 .DESCRIPTION
-Loads query execution history from the JSON history file and returns entries matching the specified database. Optionally, results can be filtered by execution status ("Success" or "Failure"). Logs are handled by the Logger module.
+Loads the query history from the queryhistory.json file and filters entries for the specified database.
+If the file does not exist, a warning is logged and an empty array is returned.
+Logs errors if the file cannot be parsed.
 
-.PARAMETERS
-Database
-    Name of the database to retrieve query history for. Mandatory.
+.PARAMETER Database
+The name of the database for which to retrieve query history.
 
-ExecutionStatus
-    Optional filter for the query execution status. Accepts "Success" or "Failure".
-
-.RETURNS
-Array of objects representing executed queries, including database name, query text, execution time, and status.
+.EXAMPLE
+PS> Get-QueryHistory -Database "TestDB"
+Returns all query history entries for the "TestDB" database from the default query history file.
 #>
 function Get-QueryHistory {
     param(
