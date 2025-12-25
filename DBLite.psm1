@@ -58,12 +58,12 @@ function Start-DBLite {
     )
 
     $connectionString = Resolve-ConnectionString $connectionInput
-    Write-DBLiteLog -Level "Info" -Message "Connected using provided connection string"
 
     $provider = New-SqlServerProvider
 
     try {
         $provider.Connect($connectionString)
+        Write-DBLiteLog -Level "Info" -Message "Connected using provided connection string"
     }
     catch {
         Write-DBLiteLog -Level "Error" -Message "Could not connect to database. See log for details: $_"

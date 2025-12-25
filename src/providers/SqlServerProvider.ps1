@@ -56,7 +56,7 @@ function New-SqlServerProvider {
         if ($this.IsConnected -and $this.Connection) {
             $this.Connection.Close()
             $this.IsConnected = $false
-            Write-DBLiteLog -Level "Info" -Message "Disconnected from SQL Server database"
+            Write-DBLiteLog -Level "Info" -Message "Disconnected from $($provider.Name) database"
         }
     } -Force
 
@@ -213,7 +213,7 @@ ORDER BY t.name, c.column_id;
 
             $tables.Values = $tables.Values | Sort-Object Name
 
-            return $tables.Values
+            return $tables.Values | Sort-Object -Property Name
         }
         catch {
             Write-DBLiteLog -Level "Error" -Message "Failed to fetch tables: $($_.Exception.Message)"

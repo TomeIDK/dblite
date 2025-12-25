@@ -32,6 +32,17 @@ function New-MainForm {
     $form.StartPosition = "CenterScreen"
     $form.FormBorderStyle = "FixedSingle"
 
+    $form.Add_FormClosing({
+            try {
+                if ($Provider -and $Provider.IsConnected) {
+                    $Provider.Disconnect()
+                }
+            }
+            catch {
+                Write-DBLiteLog -Level "Warning" -Message "Error while disconnecting on exit: $($_.Exception.Message)"
+            }
+        }.GetNewClosure())
+
     # Sidebar panel
     $Sidebar = New-Object System.Windows.Forms.Panel
     $Sidebar.Width = 120
