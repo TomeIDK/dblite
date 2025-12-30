@@ -89,7 +89,7 @@ Import-Module "<path>\DBLite.psm1" -Force
 Start-DBLite <any random string>
 ```
 
-4. Add your connection string aliases to the generated `config\aliases.json` then start DBLite again
+5. Add your connection string aliases to the generated `config\aliases.json` then start DBLite again
 
 ```json
 "alias": "connection_string"
@@ -101,10 +101,26 @@ Start-DBLite <any random string>
 
 ### PowerShell Gallery (Planned)
 
-Once published, DBLite will be installable via:
+1. Once published, DBLite will be installable via:
 
 ```powershell
 Install-Module -Name DBLite -Scope CurrentUser
+```
+
+2. Launch DBLite to initialize the config folder and contents. This will generate a warning and some errors but is the easiest way to generate all necessary config:
+
+```powershell
+Start-DBLite <any random string>
+```
+
+3. Add your connection string aliases to the generated `config\aliases.json` then start DBLite again
+
+```json
+"alias": "connection_string"
+```
+
+```powershell
+Start-DBLite <any random string>
 ```
 
 ---
