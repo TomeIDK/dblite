@@ -383,13 +383,19 @@ ORDER BY bs.backup_finish_date DESC;
             $cmd = $this.Connection.CreateCommand()
             $cmd.CommandText = $query
             Write-DBLiteLog -Level "Info" -Message "Latest backup retrieved successfully."
+            $result = $cmd.ExecuteScalar()
 
-            return $cmd.ExecuteScalar()
+            if ($null -eq $result) {
+                return "None"
+            }
+            else {
+                return $result.ToString("dd/MM/yyyy HH:mm:ss")
+            }
         }
         catch {
             Write-DBLiteLog -Level "Error" -Message "Failed to retrieve latest backup: $($_.Exception.Message)"
             Write-QueryLog -Database $this.Name -QueryText $query -ExecutionStatus "Failure"
-            throw
+            return "Failed to retrieve latest backup (see logs)"
         }
 
 

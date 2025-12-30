@@ -20,7 +20,7 @@ function New-BackupManager {
     # Last Backup Label
     # =====================
     $lastBackupLabel = New-Object System.Windows.Forms.Label
-    $lastBackupLabel.Text = "Last backup: $($Provider.GetLatestBackup().ToString('dd/MM/yyyy HH:mm:ss'))"
+    $lastBackupLabel.Text = "Last backup: $($Provider.GetLatestBackup())"
     $lastBackupLabel.AutoSize = $true
     $lastBackupLabel.TextAlign = 'MiddleLeft'
     $lastBackupLabel.ForeColor = [System.Drawing.Color]::Gray
