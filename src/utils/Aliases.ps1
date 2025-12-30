@@ -29,6 +29,13 @@ function Get-DBLiteAliases {
     )
 
     $aliasFile = $AliasFileLocation
+    $aliasFolder = Split-Path $aliasFile
+
+    # Ensure config folder exists
+    if (-not (Test-Path $aliasFolder)) {
+        Write-DBLiteLog -Level "Info" -Message "Config folder not found at $aliasFolder. Creating it."
+        New-Item -Path $aliasFolder -ItemType Directory | Out-Null
+    }
 
     # Ensure alias file exists
     if (-not (Test-Path $aliasFile)) {

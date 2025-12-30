@@ -33,6 +33,16 @@ PSCustomObject representing the SQL Server provider with methods:
 function New-SqlServerProvider {
     $provider = New-DatabaseProviderBase -Name "SQL Server"
 
+    # Dependency validation
+    try {
+        [void][System.Data.SqlClient.SqlConnection]
+    }
+    catch {
+        Write-DBLiteLog -Level "Error" -Message "System.Data.SqlClient not available on this system."
+        throw "System.Data.SqlClient not available. Use Windows PowerShell 5.1 or install Microsoft.Data.SqlClient."
+    }
+
+
     $provider | Add-Member -MemberType ScriptMethod -Name Connect -Value {
         param(
             [Parameter(Mandatory = $true, Position = 0)]
