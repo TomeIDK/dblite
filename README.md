@@ -384,6 +384,7 @@ DBLite uses Pester for unit testing:
 - [ChatGPT Chat - Test philosophy and setup](https://chatgpt.com/share/6953c653-a0e4-800b-9e9d-2640181ee504)
 - [ChatGPT Chat - UI layout design](https://chatgpt.com/share/6953c676-867c-800b-a56b-828c66e4918f)
 - [ChatGPT Chat - Documentation](https://chatgpt.com/share/6953c6b8-9a70-800b-a8ca-29c735733b54)
+- [ChatGPT Chat - Build Folder](https://chatgpt.com/share/695417fc-0718-800b-81ff-9be528d9983a)
 
 ### Generative AI Usage
 
@@ -394,4 +395,5 @@ ChatGPT was used during development as a productivity aid. It was primarily used
 - General Debugging
 - Test review
 - SQL query formulation
+- Build folder (not included in Git)
 - All documentation (proof-read by me)
