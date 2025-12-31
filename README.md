@@ -96,7 +96,7 @@ Start-DBLite <any random string>
 ```
 
 ```powershell
-Start-DBLite <any random string>
+Start-DBLite "alias"
 ```
 
 ### PowerShell Gallery (Planned)
